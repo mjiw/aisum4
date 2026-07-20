@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+
+# 환경변수
+.env
+
+# 이미지 / 벡터 등 용량 큰 파일 (git에 올리지 마세요)
+*.jpg
+*.jpeg
+*.png
+*.npy
+*.parquet
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
