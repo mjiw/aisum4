@@ -168,6 +168,37 @@ class QdrantManager:
         """벡터 개수, 설정, 상태 등 반환."""
         return self.client.get_collection(collection_name=name)
 
+    def check_index(self, name: str = DEFAULT_COLLECTION) -> dict:
+        """
+        collection의 point 개수와 인덱싱된 벡터 개수가 일치하는지 확인.
+
+        반환 dict:
+          points_count          : 전체 point 개수
+          indexed_vectors_count : HNSW 인덱스에 올라간 벡터 개수
+          matched               : 둘이 같으면 True
+
+        참고: 두 값이 다를 수 있음.
+          Qdrant는 indexing_threshold(기본 20000)보다 작은 세그먼트는
+          HNSW 인덱스를 안 만들고 brute-force로 검색함. 그래서 데이터가
+          적으면 indexed_vectors_count=0 이어도 검색은 정상 동작함.
+          즉 matched=False라고 무조건 문제가 아니라, threshold 이슈일 수 있음.
+        """
+        info = self.client.get_collection(collection_name=name)
+        points = info.points_count or 0
+        indexed = info.indexed_vectors_count or 0
+        matched = points == indexed
+
+        mark = "일치" if matched else "불일치"
+        print(f"[{name}] points={points}, indexed={indexed} -> {mark}")
+        if not matched and indexed == 0 and points > 0:
+            print("  (indexed=0 은 indexing_threshold 미달일 수 있음. 검색은 정상 동작.)")
+
+        return {
+            "points_count": points,
+            "indexed_vectors_count": indexed,
+            "matched": matched,
+        }
+
     # -----------------------------------------------------------------------
     # Point insert (upsert)
     # -----------------------------------------------------------------------
