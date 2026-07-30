@@ -186,12 +186,17 @@ def test_make_point_id_differs_per_image():
 
 def test_make_point_id_is_accepted_by_qdrant(manager):
     """
-    경로 문자열을 그대로 쓰면 Qdrant가 거부한다
-    ("Point id cropped/img_001_0 is not a valid UUID"). 변환값은 받아야 한다.
+    경로 문자열을 그대로 쓰면 Qdrant가 거부하고, 변환값은 받아야 한다.
+
+    예외 타입은 환경마다 다르다 (in-memory는 ValueError, 실서버는 HTTP 400).
+    두 메시지 모두 UUID를 언급하므로 그걸로 '같은 이유로 거부됐음'을 확인한다.
+      in-memory: "Point id cropped/img_001_0 is not a valid UUID"
+      실서버    : "... is not a valid point ID, valid values are either
+                  an unsigned integer or a UUID"
     """
     manager.create_collection(COLLECTION, vector_size=DIM)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(Exception, match="UUID"):
         manager.upsert_points(
             [{"id": "cropped/img_001_0", "vector": VECTORS[0]}], name=COLLECTION
         )

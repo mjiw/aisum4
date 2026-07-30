@@ -7,6 +7,7 @@ qdrant-client in-memory 모드(':memory:')로 실제 Qdrant 엔진을 상대로 
 
 from __future__ import annotations
 
+import os
 import random
 import uuid
 
@@ -14,7 +15,16 @@ import pytest
 from qdrant_client.http import models as qm
 
 from vectordb import qdrant as qdrant_module
-from vectordb.qdrant import DEFAULT_COLLECTION, DEFAULT_VECTOR_SIZE
+from vectordb.qdrant import DEFAULT_COLLECTION, DEFAULT_VECTOR_SIZE, PayloadSchemaType
+
+# in-memory 모드로는 검증이 불가능한 것들 (payload index는 로컬에서 아무 효과가 없고,
+# upsert 실패 시 원자성도 로컬에는 없다). 실서버가 있을 때만 돈다.
+#   docker run -d --name qdrant-test -p 16333:6333 qdrant/qdrant
+#   QDRANT_TEST_URL=http://localhost:16333 pytest tests/
+requires_real_server = pytest.mark.skipif(
+    not os.getenv("QDRANT_TEST_URL"),
+    reason="실서버 전용 (QDRANT_TEST_URL 필요)",
+)
 
 # embedding/models/dreamsim.py의 _KNOWN_DIMS["ensemble"]와 같아야 하는 값.
 # embedding 패키지는 torch를 끌고 오므로 여기서 import하지 않고 상수로 고정한다.
@@ -280,3 +290,60 @@ def test_default_collection_name_is_shared(manager):
     manager.create_collection()
 
     assert DEFAULT_COLLECTION in manager.list_collections()
+
+
+# ---------------------------------------------------------------------------
+# 실서버 전용 (in-memory에서는 확인 불가)
+# ---------------------------------------------------------------------------
+@requires_real_server
+def test_create_payload_index_registers_schema(manager):
+    """payload index는 로컬 모드에서 무효라 실서버에서만 확인 가능."""
+    manager.create_collection("c1", vector_size=4)
+
+    manager.create_payload_index("category", name="c1")
+
+    assert "category" in manager.collection_info("c1").payload_schema
+
+
+@requires_real_server
+def test_delete_payload_index_removes_schema(manager):
+    manager.create_collection("c1", vector_size=4)
+    manager.create_payload_index("category", name="c1")
+
+    manager.delete_payload_index("category", name="c1")
+
+    assert "category" not in manager.collection_info("c1").payload_schema
+
+
+@requires_real_server
+def test_indexed_payload_filter_returns_correct_results(manager):
+    """index를 건 필드로 필터링해도 결과가 정확해야 함."""
+    manager.create_collection("c1", vector_size=4)
+    manager.create_payload_index("category", PayloadSchemaType.KEYWORD, name="c1")
+    manager.upsert_points(
+        [
+            {"id": 1, "vector": [1, 0, 0, 0], "payload": {"category": "top"}},
+            {"id": 2, "vector": [1, 0, 0, 0], "payload": {"category": "bottom"}},
+            {"id": 3, "vector": [0, 1, 0, 0], "payload": {"category": "top"}},
+        ],
+        name="c1",
+    )
+
+    flt = qm.Filter(must=[qm.FieldCondition(key="category", match=qm.MatchValue(value="top"))])
+    hits = manager.search([1, 0, 0, 0], name="c1", top_k=10, flt=flt)
+
+    assert [h.id for h in hits] == [1, 3]
+
+
+@requires_real_server
+def test_failed_upsert_leaves_collection_clean(manager):
+    """
+    실서버는 차원이 틀린 upsert를 원자적으로 거부한다.
+    (in-memory 모드는 원자성이 없어서 깨진 point가 남는다 — 그래서 실서버 전용.)
+    """
+    manager.create_collection()
+
+    with pytest.raises(Exception):
+        manager.upsert_points([{"id": 1, "vector": random_vector(512, seed=1)}])
+
+    assert manager.count() == 0

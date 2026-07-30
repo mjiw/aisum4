@@ -225,6 +225,126 @@ def test_search_with_no_match_returns_empty(searcher):
 
 
 # ---------------------------------------------------------------------------
+# dedup 후 top_k 미달 시 재조회 (backfill)
+#   실제 데이터에서는 한 원본에서 크롭이 여러 개 나오고 서로 매우 유사하므로,
+#   dedup 후 top_k가 안 채워지는 게 예외가 아니라 기본 상황이다.
+# ---------------------------------------------------------------------------
+HOT_CROPS = 8  # 한 원본에서 나온 크롭 수. oversample(1.5)로는 절대 못 넘는 양.
+
+
+@pytest.fixture
+def starved_searcher(manager):
+    """
+    상위 결과가 한 p_key의 크롭으로 도배된 collection.
+    dedup만 하고 재조회를 안 하면 top_k를 크게 밑돈다.
+    """
+    collection = "starved"
+    manager.create_collection(name=collection, vector_size=VECTOR_SIZE, distance="cosine")
+
+    points = [
+        {
+            # [1,0,0,0]에 아주 작은 변화만 준 벡터들 -> 전부 최상위 점수
+            "id": i,
+            "vector": [1.0, 0.001 * i, 0.0, 0.0],
+            "payload": {"p_key": "img_hot", "au_id": "au1", "category_detected": "top"},
+        }
+        for i in range(HOT_CROPS)
+    ]
+    points += [
+        {
+            "id": 100 + j,
+            "vector": vector,
+            "payload": {"p_key": f"img_{j}", "au_id": "au2", "category_detected": "top"},
+        }
+        for j, vector in enumerate([[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
+    ]
+    manager.upsert_points(points, name=collection)
+    return ImageSearcher(manager, collection=collection)
+
+
+def test_search_backfills_until_top_k(starved_searcher):
+    """
+    top_k=4인데 초기 limit(=6)이 전부 img_hot 크롭이라 dedup 후 1건만 남는다.
+    재조회로 4건을 채워야 한다.
+    """
+    results = starved_searcher.search(QUERY_A, top_k=4)
+
+    keys = p_keys(results)
+    assert len(results) == 4, f"top_k를 못 채웠음: {keys}"
+    assert keys[0] == "img_hot"
+    assert len(keys) == len(set(keys))
+
+
+def test_search_backfill_stops_when_no_more_results(manager):
+    """전부 같은 p_key면 더 가져올 게 없으므로 1건만 반환하고 멈춰야 한다 (무한루프 금지)."""
+    collection = "all_same"
+    manager.create_collection(name=collection, vector_size=VECTOR_SIZE, distance="cosine")
+    manager.upsert_points(
+        [
+            {"id": i, "vector": [1.0, 0.001 * i, 0.0, 0.0], "payload": {"p_key": "only"}}
+            for i in range(20)
+        ],
+        name=collection,
+    )
+
+    results = ImageSearcher(manager, collection=collection).search(QUERY_A, top_k=5)
+
+    assert p_keys(results) == ["only"]
+
+
+def test_search_backfill_round_trips_are_bounded(starved_searcher, monkeypatch):
+    """재조회가 몇 번이고 반복되지 않아야 한다."""
+    calls = []
+    original = starved_searcher.mgr.client.query_points
+
+    def spy(**kwargs):
+        calls.append(kwargs["limit"])
+        return original(**kwargs)
+
+    monkeypatch.setattr(starved_searcher.mgr.client, "query_points", spy)
+    starved_searcher.search(QUERY_A, top_k=4)
+
+    assert len(calls) <= 4, f"조회 횟수 과다: {calls}"
+    assert calls == sorted(calls), f"limit이 증가해야 함: {calls}"
+
+
+def test_search_no_backfill_when_dedup_off(starved_searcher, monkeypatch):
+    """dedup을 끄면 재조회할 이유가 없으므로 한 번만 조회해야 한다."""
+    calls = []
+    original = starved_searcher.mgr.client.query_points
+
+    def spy(**kwargs):
+        calls.append(kwargs["limit"])
+        return original(**kwargs)
+
+    monkeypatch.setattr(starved_searcher.mgr.client, "query_points", spy)
+    results = starved_searcher.search(QUERY_A, top_k=4, dedup_by_pkey=False)
+
+    assert calls == [4]
+    assert p_keys(results) == ["img_hot"] * 4
+
+
+def test_search_batch_backfills_until_top_k(starved_searcher):
+    results = starved_searcher.search_batch([QUERY_A], top_k=4)[0]
+
+    keys = [r["p_key"] for r in results]
+    assert len(results) == 4, f"top_k를 못 채웠음: {keys}"
+    assert len(keys) == len(set(keys))
+
+
+def test_search_batch_backfills_only_deficient_queries(starved_searcher):
+    """부족한 쿼리만 재조회해도 모든 쿼리의 결과가 정확해야 한다."""
+    results = starved_searcher.search_batch([QUERY_A, QUERY_B], top_k=4)
+
+    assert len(results) == 2
+    assert results[0][0]["p_key"] == "img_hot"  # 재조회가 필요했던 쿼리
+    assert results[1][0]["p_key"] == "img_0"    # 처음부터 충분했던 쿼리
+    for res in results:
+        keys = [r["p_key"] for r in res]
+        assert len(keys) == len(set(keys))
+
+
+# ---------------------------------------------------------------------------
 # search_batch
 # ---------------------------------------------------------------------------
 def test_search_batch_returns_one_list_per_query(searcher):

@@ -27,6 +27,10 @@ from qdrant_client.http import models as qm
 
 from vectordb.qdrant import DEFAULT_COLLECTION, QdrantManager
 
+# dedup으로 top_k가 안 채워지면 limit을 2배씩 늘려 재조회하는데, 그 상한 배수.
+# 한 원본에서 크롭이 아주 많이 나온 경우 무한정 긁는 것을 막는다.
+MAX_FETCH_MULTIPLIER = 32
+
 
 class ImageSearcher:
     """QdrantManager를 감싸는(composition) 이미지 검색기. 상속 안 함."""
@@ -106,6 +110,28 @@ class ImageSearcher:
         deduped = cls._dedup_by_pkey(points, top_k) if dedup_by_pkey else list(points)[:top_k]
         return [cls._to_dict(p) for p in deduped] if as_dict else deduped
 
+    @staticmethod
+    def _needs_more(
+        points: Sequence[Any],
+        deduped: Sequence[Any],
+        top_k: int,
+        limit: int,
+        max_limit: int,
+    ) -> bool:
+        """
+        limit을 늘려 다시 조회해야 하는지 판단.
+
+        더 가져와도 의미가 없는 경우는 넘어간다.
+          - 이미 top_k를 채웠다
+          - 받은 개수가 limit보다 적다 = collection에 더 없다
+          - 상한에 도달했다
+        """
+        return (
+            len(deduped) < top_k
+            and len(points) >= limit
+            and limit < max_limit
+        )
+
     # -----------------------------------------------------------------------
     # 단일 벡터 검색
     # -----------------------------------------------------------------------
@@ -124,15 +150,28 @@ class ImageSearcher:
         쿼리 벡터 하나로 유사도 검색.
 
         dedup_by_pkey=True면 oversample 배수만큼 더 가져온 뒤 p_key 중복 제거 후 top_k만 반환.
-        (dedup 후 top_k에 못 미칠 수 있음 — 부족하면 oversample 키우거나 재조회. 일단 단순 유지.)
+        한 원본에서 크롭이 여러 개 나온 경우 dedup으로 top_k가 안 채워지는데,
+        그때는 limit을 2배씩 늘려 재조회한다 (최대 top_k * MAX_FETCH_MULTIPLIER).
+        collection에 결과가 더 없으면 top_k보다 적게 반환될 수 있다.
         """
-        points = self.mgr.search(
-            query_vector,
-            name=self.collection,
-            top_k=self._fetch_limit(top_k, dedup_by_pkey, oversample),
-            flt=self._build_filter(category=category, au_id=au_id),
-            score_threshold=score_threshold,
-        )
+        flt = self._build_filter(category=category, au_id=au_id)
+        limit = self._fetch_limit(top_k, dedup_by_pkey, oversample)
+        max_limit = top_k * MAX_FETCH_MULTIPLIER
+
+        while True:
+            points = self.mgr.search(
+                query_vector,
+                name=self.collection,
+                top_k=limit,
+                flt=flt,
+                score_threshold=score_threshold,
+            )
+            if not dedup_by_pkey:
+                break
+            deduped = self._dedup_by_pkey(points, top_k)
+            if not self._needs_more(points, deduped, top_k, limit, max_limit):
+                break
+            limit = min(limit * 2, max_limit)
 
         # [TODO] p_score 커스텀 스코어링이 확정되면 여기서 재정렬:
         #   p_score = similarity * bbox_size * centrality (2차 방식)
@@ -157,31 +196,56 @@ class ImageSearcher:
         벡터 여러 개를 query_batch_points로 한 번에 검색. 쿼리별 결과 리스트를 반환.
         categories를 주면 벡터별로 category_detected 필터 적용 (길이 일치 필요).
 
+        search()와 같이 dedup으로 top_k가 안 채워지면 limit을 늘려 재조회한다.
+        이때 부족한 쿼리만 모아서 다시 배치로 보내므로 왕복 횟수는 쿼리 수와 무관하다.
+
         배치 API는 QdrantManager에 없어서 client를 직접 쓴다.
         """
         if categories is not None and len(categories) != len(query_vectors):
             raise ValueError("categories 길이가 query_vectors와 다름.")
 
-        limit = self._fetch_limit(top_k, dedup_by_pkey, oversample)
-        requests = [
-            qm.QueryRequest(
-                query=list(vec),
-                limit=limit,
-                filter=self._build_filter(
-                    category=categories[i] if categories is not None else None
-                ),
-                with_payload=True,
-                with_vector=False,
-                score_threshold=score_threshold,
-            )
-            for i, vec in enumerate(query_vectors)
+        filters = [
+            self._build_filter(category=categories[i] if categories is not None else None)
+            for i in range(len(query_vectors))
         ]
+        limit = self._fetch_limit(top_k, dedup_by_pkey, oversample)
+        max_limit = top_k * MAX_FETCH_MULTIPLIER
 
-        responses = self.mgr.client.query_batch_points(
-            collection_name=self.collection,
-            requests=requests,
-        )
+        points_per_query: list[list[Any]] = [[] for _ in query_vectors]
+        pending = list(range(len(query_vectors)))
+
+        while pending:
+            responses = self.mgr.client.query_batch_points(
+                collection_name=self.collection,
+                requests=[
+                    qm.QueryRequest(
+                        query=list(query_vectors[i]),
+                        limit=limit,
+                        filter=filters[i],
+                        with_payload=True,
+                        with_vector=False,
+                        score_threshold=score_threshold,
+                    )
+                    for i in pending
+                ],
+            )
+
+            short = []
+            for i, res in zip(pending, responses):
+                points_per_query[i] = res.points
+                if dedup_by_pkey and self._needs_more(
+                    res.points,
+                    self._dedup_by_pkey(res.points, top_k),
+                    top_k,
+                    limit,
+                    max_limit,
+                ):
+                    short.append(i)
+
+            pending = short
+            limit = min(limit * 2, max_limit)
+
         return [
-            self._finalize(res.points, top_k, dedup_by_pkey, as_dict)
-            for res in responses
+            self._finalize(points, top_k, dedup_by_pkey, as_dict)
+            for points in points_per_query
         ]
