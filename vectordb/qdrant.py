@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import Any, Iterable, Optional, Sequence
+from typing import Any, Optional, Sequence
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qm
@@ -48,7 +48,9 @@ QDRANT_USE_GRPC = os.getenv("QDRANT_USE_GRPC", "false").lower() == "true"
 
 # collection 기본값 (필요에 맞게 수정)
 DEFAULT_COLLECTION = "fashion_items"
-DEFAULT_VECTOR_SIZE = 512          # 임베딩 차원. CLIP ViT-B/32 = 512, ViT-L/14 = 768
+DEFAULT_VECTOR_SIZE = 1792         # 임베딩 차원. dreamsim ensemble = 1792
+                                   #   (dino_vitb16 768 + clip 512 + open_clip 512)
+                                   #   모델 바꾸면 embedding 쪽 embed_dim과 반드시 맞출 것.
 DEFAULT_DISTANCE = Distance.COSINE  # COSINE / DOT / EUCLID
 
 
@@ -372,14 +374,14 @@ if __name__ == "__main__":
     # mgr = QdrantManager()
     # assert mgr.ping(), "서버 접속 실패 - IP/포트/방화벽 확인"
     #
-    # mgr.create_collection(vector_size=512, distance="cosine", recreate=True)
+    # mgr.create_collection(vector_size=DEFAULT_VECTOR_SIZE, distance="cosine", recreate=True)
     # mgr.create_payload_index("category", PayloadSchemaType.KEYWORD)
     #
     # import random
     # dummy = [
     #     {
     #         "id": i,
-    #         "vector": [random.random() for _ in range(512)],
+    #         "vector": [random.random() for _ in range(DEFAULT_VECTOR_SIZE)],
     #         "payload": {"category": "top", "name": f"item_{i}"},
     #     }
     #     for i in range(20)
