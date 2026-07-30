@@ -36,9 +36,10 @@ import json
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Optional
+from typing import Any, Iterable, Iterator, Mapping, Optional
 
 import numpy as np
+from qdrant_client.http import models as qm
 
 from vectordb.qdrant import DEFAULT_COLLECTION, DEFAULT_DISTANCE, QdrantManager
 
@@ -87,7 +88,8 @@ def load_artifacts(artifact_dir: str | Path) -> Artifacts:
         if not (base / filename).is_file():
             raise FileNotFoundError(f"{filename}이 없습니다: {base / filename}")
 
-    embeddings = np.load(base / EMBEDDINGS_FILE)
+    # mmap: 수십만 장 규모의 npy를 통째로 RAM에 올리지 않고 행 단위로 읽는다.
+    embeddings = np.load(base / EMBEDDINGS_FILE, mmap_mode="r")
     with open(base / IDS_FILE, encoding="utf-8") as f:
         image_ids = json.load(f)
     with open(base / META_FILE, encoding="utf-8") as f:
@@ -112,8 +114,10 @@ def load_artifacts(artifact_dir: str | Path) -> Artifacts:
             f"meta.json의 embed_dim({expected_dim})과 실제 차원({embeddings.shape[1]})이 다릅니다"
         )
 
+    # float32면 mmap 상태를 유지한다. 아니면 캐스팅하면서 메모리로 올라오는데,
+    # build_index.py는 float32로 저장하므로 정상 경로에서는 발생하지 않는다.
     if embeddings.dtype != np.float32:
-        embeddings = embeddings.astype(np.float32, copy=False)
+        embeddings = np.asarray(embeddings, dtype=np.float32)
 
     return Artifacts(embeddings=embeddings, image_ids=list(image_ids), meta=meta)
 
@@ -143,19 +147,53 @@ def resolve_payload(image_id: str, metadata: Optional[Mapping[str, Mapping]] = N
     return payload
 
 
+def make_point(
+    artifacts: Artifacts,
+    row: int,
+    metadata: Optional[Mapping[str, Mapping]] = None,
+) -> dict:
+    """아티팩트의 row번째 행 -> QdrantManager.upsert_points가 받는 dict 하나."""
+    image_id = artifacts.image_ids[row]
+    return {
+        "id": make_point_id(image_id),
+        "vector": artifacts.embeddings[row].tolist(),
+        "payload": resolve_payload(image_id, metadata),
+    }
+
+
+def iter_point_batches(
+    artifacts: Artifacts,
+    metadata: Optional[Mapping[str, Mapping]] = None,
+    batch_size: int = 256,
+) -> Iterator[list[dict]]:
+    """
+    point dict를 batch_size개씩 흘려보낸다.
+
+    전체를 한 번에 파이썬 리스트로 만들면 안 된다. .tolist()가 만드는 파이썬 float은
+    개당 24바이트 남짓이라, 50만장 x 1792차원이면 20GB를 넘겨 메모리가 터진다.
+    한 번에 batch_size행만 들고 있도록 제너레이터로 뺀다.
+    """
+    if batch_size <= 0:
+        raise ValueError(f"batch_size는 양의 정수여야 합니다: {batch_size}")
+
+    for start in range(0, artifacts.count, batch_size):
+        yield [
+            make_point(artifacts, row, metadata)
+            for row in range(start, min(start + batch_size, artifacts.count))
+        ]
+
+
 def build_points(
     artifacts: Artifacts,
     metadata: Optional[Mapping[str, Mapping]] = None,
 ) -> list[dict]:
-    """Artifacts -> QdrantManager.upsert_points가 받는 dict 리스트."""
-    return [
-        {
-            "id": make_point_id(image_id),
-            "vector": artifacts.embeddings[row].tolist(),
-            "payload": resolve_payload(image_id, metadata),
-        }
-        for row, image_id in enumerate(artifacts.image_ids)
-    ]
+    """
+    전체 point를 리스트로 만든다.
+
+    메모리에 전부 올리므로 dry-run 확인이나 테스트처럼 작은 입력에만 쓸 것.
+    실제 적재는 iter_point_batches()를 쓴다.
+    """
+    return [make_point(artifacts, row, metadata) for row in range(artifacts.count)]
 
 
 def missing_search_fields(points: Iterable[Mapping]) -> list[str]:
@@ -169,6 +207,39 @@ def missing_search_fields(points: Iterable[Mapping]) -> list[str]:
 # ---------------------------------------------------------------------------
 # 적재
 # ---------------------------------------------------------------------------
+def ensure_collection(
+    manager: QdrantManager,
+    collection: str,
+    dim: int,
+    recreate: bool = False,
+) -> None:
+    """
+    collection을 적재 가능한 상태로 만든다.
+
+    이미 있으면 차원이 맞는지 확인한다. 안 그러면 create_collection이 조용히 skip한 뒤
+    upsert 단계에서 원인 파악이 어려운 차원 에러가 난다.
+    """
+    if manager.create_collection(
+        name=collection,
+        vector_size=dim,
+        distance=DEFAULT_DISTANCE,
+        recreate=recreate,
+    ):
+        return
+
+    existing = manager.collection_info(collection).config.params.vectors
+    if not isinstance(existing, qm.VectorParams):
+        raise ValueError(
+            f"collection '{collection}'은 named vector 구성입니다. "
+            "이 프로젝트는 단일 벡터만 씁니다. --recreate로 다시 만드세요."
+        )
+    if existing.size != dim:
+        raise ValueError(
+            f"기존 collection '{collection}'의 차원({existing.size})이 "
+            f"아티팩트({dim})와 다릅니다. --recreate를 쓰거나 다른 collection을 지정하세요."
+        )
+
+
 def ingest(
     artifacts: Artifacts,
     manager: QdrantManager,
@@ -182,23 +253,21 @@ def ingest(
 
     collection은 아티팩트의 실제 차원으로 만든다 (기본 상수를 믿지 않는다).
     같은 아티팩트를 두 번 적재해도 point id가 같아서 개수는 늘지 않는다.
+    벡터는 batch_size 단위로 흘려보내므로 전체가 메모리에 올라가지 않는다.
     """
-    points = build_points(artifacts, metadata)
+    ensure_collection(manager, collection, artifacts.dim, recreate=recreate)
 
-    absent = missing_search_fields(points)
-    if absent:
-        print(
-            f"[warn] payload에 {absent} 없음. "
-            "ImageSearcher의 해당 필터/dedup은 동작하지 않음 (--metadata 참고)."
-        )
-
-    manager.create_collection(
-        name=collection,
-        vector_size=artifacts.dim,
-        distance=DEFAULT_DISTANCE,
-        recreate=recreate,
-    )
-    return manager.upsert_points(points, name=collection, batch_size=batch_size)
+    total = 0
+    for index, batch in enumerate(iter_point_batches(artifacts, metadata, batch_size)):
+        if index == 0:
+            absent = missing_search_fields(batch)
+            if absent:
+                print(
+                    f"[warn] payload에 {absent} 없음. "
+                    "ImageSearcher의 해당 필터/dedup은 동작하지 않음 (--metadata 참고)."
+                )
+        total += manager.upsert_points(batch, name=collection, batch_size=batch_size)
+    return total
 
 
 def load_metadata(path: str | Path) -> dict[str, Mapping]:
@@ -252,9 +321,10 @@ def main(argv: Optional[list[str]] = None) -> None:
     )
 
     if args.dry_run:
-        points = build_points(artifacts, metadata)
-        absent = missing_search_fields(points)
-        sample = points[0]
+        # 첫 배치만 본다. 전체를 만들면 큰 아티팩트에서 dry-run이 메모리를 먹는다.
+        sample_batch = next(iter_point_batches(artifacts, metadata, args.batch_size))
+        absent = missing_search_fields(sample_batch)
+        sample = sample_batch[0]
         print(f"샘플 point id : {sample['id']}")
         print(f"샘플 payload  : {sample['payload']}")
         print(f"누락 검색 필드: {absent or '없음'}")

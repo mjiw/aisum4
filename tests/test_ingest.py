@@ -16,7 +16,9 @@ from qdrant_client.http import models as qm
 
 from vectordb.ingest import (
     build_points,
+    ensure_collection,
     ingest,
+    iter_point_batches,
     load_artifacts,
     load_metadata,
     main,
@@ -250,8 +252,103 @@ def test_build_points_pairs_vector_with_its_id(artifact_dir):
 
 
 # ---------------------------------------------------------------------------
+# 배치 스트리밍 (전체를 메모리에 안 올리는지)
+# ---------------------------------------------------------------------------
+def test_iter_point_batches_is_lazy(artifact_dir):
+    """제너레이터여야 함. 리스트를 반환하면 전체가 메모리에 올라간다."""
+    batches = iter_point_batches(load_artifacts(artifact_dir), batch_size=2)
+
+    assert not isinstance(batches, list)
+    assert next(batches) is not None  # 전체를 다 만들지 않고 첫 배치만 꺼낼 수 있다
+
+
+@pytest.mark.parametrize("batch_size", [1, 2, 3, 4, 100])
+def test_iter_point_batches_covers_every_row_once(artifact_dir, batch_size):
+    artifacts = load_artifacts(artifact_dir)
+    batches = list(iter_point_batches(artifacts, METADATA, batch_size))
+
+    assert all(len(batch) <= batch_size for batch in batches)
+    flat = [point for batch in batches for point in batch]
+    assert [p["payload"]["image_id"] for p in flat] == IMAGE_IDS
+
+
+def test_iter_point_batches_rejects_bad_batch_size(artifact_dir):
+    with pytest.raises(ValueError, match="batch_size"):
+        next(iter_point_batches(load_artifacts(artifact_dir), batch_size=0))
+
+
+def test_embeddings_stay_memory_mapped(artifact_dir):
+    """큰 npy를 통째로 RAM에 올리지 않는지 (float32면 mmap 유지)."""
+    artifacts = load_artifacts(artifact_dir)
+
+    assert isinstance(artifacts.embeddings, np.memmap)
+
+
+# ---------------------------------------------------------------------------
+# ensure_collection
+# ---------------------------------------------------------------------------
+def test_ensure_collection_creates_with_given_dim(manager):
+    ensure_collection(manager, COLLECTION, DIM)
+
+    assert manager.collection_info(COLLECTION).config.params.vectors.size == DIM
+
+
+def test_ensure_collection_accepts_matching_existing(manager):
+    manager.create_collection(COLLECTION, vector_size=DIM)
+
+    ensure_collection(manager, COLLECTION, DIM)  # 예외 없어야 함
+
+
+def test_ensure_collection_rejects_dim_mismatch(manager):
+    """차원이 다른 기존 collection에 적재하면 upsert 전에 명확히 터져야 함."""
+    manager.create_collection(COLLECTION, vector_size=DIM + 1)
+
+    with pytest.raises(ValueError, match="차원"):
+        ensure_collection(manager, COLLECTION, DIM)
+
+
+def test_ensure_collection_recreate_fixes_dim_mismatch(manager):
+    manager.create_collection(COLLECTION, vector_size=DIM + 1)
+
+    ensure_collection(manager, COLLECTION, DIM, recreate=True)
+
+    assert manager.collection_info(COLLECTION).config.params.vectors.size == DIM
+
+
+def test_ensure_collection_rejects_named_vector_collection(manager):
+    """named vector collection은 단일 벡터 전제와 맞지 않으므로 거부."""
+    manager.client.create_collection(
+        collection_name=COLLECTION,
+        vectors_config={"dreamsim": qm.VectorParams(size=DIM, distance=qm.Distance.COSINE)},
+    )
+
+    with pytest.raises(ValueError, match="named vector"):
+        ensure_collection(manager, COLLECTION, DIM)
+
+
+def test_ingest_rejects_dim_mismatch_before_upsert(manager, artifact_dir):
+    manager.create_collection(COLLECTION, vector_size=DIM + 1)
+
+    with pytest.raises(ValueError, match="차원"):
+        ingest(load_artifacts(artifact_dir), manager, collection=COLLECTION)
+
+    assert manager.count(COLLECTION) == 0  # 아무것도 안 들어갔다
+
+
+# ---------------------------------------------------------------------------
 # ingest
 # ---------------------------------------------------------------------------
+@pytest.mark.parametrize("batch_size", [1, 2, 3, 4, 100])
+def test_ingest_loads_all_points_regardless_of_batch_size(manager, artifact_dir, batch_size):
+    total = ingest(
+        load_artifacts(artifact_dir), manager, collection=COLLECTION, batch_size=batch_size
+    )
+
+    assert total == 4
+    assert manager.count(COLLECTION) == 4
+
+
+
 def test_ingest_loads_all_points(manager, artifact_dir):
     total = ingest(load_artifacts(artifact_dir), manager, collection=COLLECTION)
 

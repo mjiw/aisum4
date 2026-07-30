@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import Any, Iterable, Optional, Sequence
+from typing import Any, Optional, Sequence
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qm
