@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# 테스트용 (실제 Qdrant 서버 없이 in-memory 모드로 검증)
+pytest
