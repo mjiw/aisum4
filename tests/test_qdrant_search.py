@@ -9,7 +9,6 @@ mock이 아니라 진짜 Qdrant 엔진이 검색/필터/스코어링을 수행�
 from __future__ import annotations
 
 import pytest
-from qdrant_client import QdrantClient
 from qdrant_client.http import models as qm
 
 from vectordb import qdrant as qdrant_module
@@ -39,14 +38,9 @@ FIXTURE_POINTS = [
 # fixtures
 # ---------------------------------------------------------------------------
 @pytest.fixture
-def manager(monkeypatch):
-    """QdrantClient만 in-memory로 바꿔치기한 실제 QdrantManager."""
-    monkeypatch.setattr(
-        qdrant_module,
-        "QdrantClient",
-        lambda **_kwargs: QdrantClient(location=":memory:"),
-    )
-    mgr = qdrant_module.QdrantManager(host="localhost")
+def seeded_manager(manager):
+    """conftest의 in-memory manager에 테스트용 collection과 point를 채운 것."""
+    mgr = manager
     mgr.create_collection(
         name=COLLECTION,
         vector_size=VECTOR_SIZE,
@@ -68,8 +62,8 @@ def manager(monkeypatch):
 
 
 @pytest.fixture
-def searcher(manager):
-    return ImageSearcher(manager, collection=COLLECTION)
+def searcher(seeded_manager):
+    return ImageSearcher(seeded_manager, collection=COLLECTION)
 
 
 def p_keys(results):
@@ -127,9 +121,9 @@ def test_search_batch_queries_without_vector_name(searcher, monkeypatch):
     assert all(getattr(req, "using", None) is None for req in captured)
 
 
-def test_collection_stores_one_unnamed_vector(manager):
+def test_collection_stores_one_unnamed_vector(seeded_manager):
     """collection 설정이 단일(unnamed) 벡터인지 확인. dict면 named vector 구성."""
-    vectors_config = manager.collection_info(COLLECTION).config.params.vectors
+    vectors_config = seeded_manager.collection_info(COLLECTION).config.params.vectors
     assert isinstance(vectors_config, qm.VectorParams)
     assert vectors_config.size == VECTOR_SIZE
 
