@@ -1,0 +1,12 @@
+{
+  "data": {
+    "image_folder": "./data/cropped_images",
+    "output_dir": "results"
+  },
+  "models": {
+    "dreamsim": {
+      "batch_size": 32,
+      "cache_dir": "./model_cache/dreamsim"
+    }
+  }
+}
