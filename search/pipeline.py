@@ -22,14 +22,22 @@ VECTOR_SIZE = 1792
 
 
 def get_embedding(image_path):
-    """이미지 경로 하나 -> 벡터 하나
+    """이미지 경로 하나 -> 벡터 하나 (L2 정규화된 float 리스트)"""
 
-    TODO: 실제 함수 완성되면 이 본문을 아래처럼 교체
-        from embedding.embed import embed_image
-        return embed_image(image_path)
-    """
-    random.seed(str(image_path))  # 같은 이미지는 항상 같은 벡터
-    return [random.uniform(-1, 1) for _ in range(VECTOR_SIZE)]
+    import json
+    from PIL import Image
+    from embedding import create_model
+
+    # 모델 로딩이 무거우므로 최초 1회만 로드하고 함수 속성에 캐싱
+    if not hasattr(get_embedding, "_model"):
+        config_path = Path(__file__).parent.parent / "embedding" / "config.json"
+        with open(config_path, encoding="utf-8") as f:
+            cfg = json.load(f)
+        get_embedding._model = create_model("dreamsim", cfg)
+
+    img = Image.open(image_path).convert("RGB")
+    
+    return get_embedding._model.embed([img])[0].tolist()
 
 
 def search_similar(vector, top_k=5):
