@@ -45,16 +45,26 @@ def search_similar(vector, top_k=5):
 
     리턴 형태 (UI가 기대하는 형태):
         [{"image_path": str, "score": float}, ...]
-
-    TODO: 실제 함수 완성되면 그 함수를 호출하고,
-          결과를 위 형태로 '변환'해서 리턴하면 됨. (형식이 달라도 여기서 흡수)
     """
-    paths = sorted(p for p in MOCK_IMAGE_DIR.glob("*") if p.suffix.lower() in IMAGE_EXTS)
+    from vectordb.qdrant import QdrantManager, DEFAULT_COLLECTION
+    from vectordb.qdrant_search import ImageSearcher
+
+    # 연결/검색기는 무거우니 최초 1회만 생성하고 함수 속성에 캐싱
+    if not hasattr(search_similar, "_searcher"):
+        mgr = QdrantManager()  # 접속 정보는 QDRANT_HOST 등 환경변수로 주입
+        search_similar._searcher = ImageSearcher(mgr, collection=DEFAULT_COLLECTION)
+
+    hits = search_similar._searcher.search(
+        query_vector=vector,
+        top_k=top_k,
+        dedup_by_pkey=True,
+        as_dict=True,
+    )
 
     results = []
-    for i, path in enumerate(paths[:top_k]):
-        results.append({
-            "image_path": str(path),
-            "score": round(0.99 - i * 0.07, 3),  # 그럴듯한 유사도 값
-        })
+    for h in hits:
+        path = h.get("image_path")
+        if not path:
+            continue  # 필드 없거나 빈 항목은 스킵 (적재 전 데이터 대비)
+        results.append({"image_path": path, "score": h["score"]})
     return results
