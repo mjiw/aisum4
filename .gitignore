@@ -15,6 +15,10 @@ venv/
 *.npy
 *.parquet
 
+# 모델 캐시 (DreamSim 등 다운로드된 가중치, 수 GB) / 임베딩 결과물
+model_cache/
+results/
+
 # IDE / OS
 .idea/
 .vscode/
