@@ -1,24 +1,17 @@
 """
-UI가 호출하는 함수들 (현재는 mock)
+UI가 호출하는 함수들
 
 app.py 는 이 파일의 함수만 부릅니다.
-나중에 실제 임베딩/검색 함수가 완성되면 아래 두 함수의 '본문'만 바꾸면 되고,
+임베딩/검색 구현이 바뀌면 아래 두 함수의 '본문'만 바꾸면 되고,
 app.py 는 손댈 필요 없습니다.
 """
 
-import random
 import sys
 from pathlib import Path
 
 # 나중에 다른 팀 코드를 import 할 수 있도록 레포 최상위를 경로에 추가
 # (예: from embedding.embed import embed_image)
 sys.path.append(str(Path(__file__).parent.parent))
-
-MOCK_IMAGE_DIR = Path(__file__).parent / "mock_images"
-IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
-
-# UI는 벡터 값을 화면에 쓰지 않으므로 차원은 아무거나 상관없음
-VECTOR_SIZE = 1792
 
 
 def get_embedding(image_path):
