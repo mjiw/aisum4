@@ -6,12 +6,22 @@ app.py 는 이 파일의 함수만 부릅니다.
 app.py 는 손댈 필요 없습니다.
 """
 
+import os
 import sys
 from pathlib import Path
 
 # 나중에 다른 팀 코드를 import 할 수 있도록 레포 최상위를 경로에 추가
 # (예: from embedding.embed import embed_image)
 sys.path.append(str(Path(__file__).parent.parent))
+
+# 검색 결과를 화면에 띄우려면 실제 이미지 파일이 필요하다.
+# DB에는 절대경로를 저장하지 않는다 — 임베딩을 돌린 서버와 UI가 도는 PC의
+# 경로가 다르기 때문. 대신 payload의 image_id(확장자 없는 상대경로)를
+# 아래 폴더 기준으로 풀어서 쓴다.
+IMAGE_ROOT = Path(
+    os.getenv("AISUM_IMAGE_ROOT", Path(__file__).parent / "mock_images")
+)
+IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".webp", ".bmp")
 
 
 def get_embedding(image_path):
@@ -31,6 +41,27 @@ def get_embedding(image_path):
     img = Image.open(image_path).convert("RGB")
     
     return get_embedding._model.embed([img])[0].tolist()
+
+
+def resolve_image_path(payload):
+    """검색 결과 payload -> 화면에 띄울 이미지 파일 경로. 못 찾으면 None.
+
+    적재할 때 image_path를 직접 넣어줬으면 그걸 그대로 쓰고,
+    없으면 image_id(확장자 없는 상대경로)를 IMAGE_ROOT 기준으로 푼다.
+    """
+    direct = payload.get("image_path")
+    if direct and Path(direct).exists():
+        return str(direct)
+
+    image_id = payload.get("image_id")
+    if not image_id:
+        return None
+
+    for ext in IMAGE_EXTS:
+        candidate = IMAGE_ROOT / f"{image_id}{ext}"
+        if candidate.exists():
+            return str(candidate)
+    return None
 
 
 def search_similar(vector, top_k=5):
@@ -55,9 +86,19 @@ def search_similar(vector, top_k=5):
     )
 
     results = []
+    unresolved = []
     for h in hits:
-        path = h.get("image_path")
-        if not path:
-            continue  # 필드 없거나 빈 항목은 스킵 (적재 전 데이터 대비)
+        path = resolve_image_path(h)
+        if path is None:
+            unresolved.append(h.get("image_id"))
+            continue
         results.append({"image_path": path, "score": h["score"]})
+
+    if unresolved:
+        # 조용히 빈 리스트를 돌려주면 "검색이 안 된다"로 오해하기 쉬워서 남긴다.
+        print(
+            f"[warn] 검색은 {len(hits)}건 성공했으나 이미지 파일을 못 찾아 "
+            f"{len(unresolved)}건 제외: {unresolved[:5]}\n"
+            f"       찾은 위치: {IMAGE_ROOT}  (AISUM_IMAGE_ROOT로 변경 가능)"
+        )
     return results
