@@ -300,7 +300,16 @@ def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         action="store_true",
         help="기존 collection을 지우고 새로 만든다 (데이터 날아감)",
     )
-    parser.add_argument("--batch-size", type=int, default=256)
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=256,
+        help=(
+            "한 요청에 보낼 point 수 (기본 256). 키워도 속도는 거의 안 늘고, "
+            "요청이 20MB를 넘으면 서버가 연결을 끊는다 "
+            "(1792차원 기준 약 1000개). 256~512 권장."
+        ),
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
