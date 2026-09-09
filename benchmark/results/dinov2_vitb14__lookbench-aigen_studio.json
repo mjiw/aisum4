@@ -1,0 +1,62 @@
+{
+  "model": "dinov2_vitb14",
+  "model_metadata": {
+    "hf_id": "facebook/dinov2-base",
+    "pooling": "cls"
+  },
+  "embed_dim": 768,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "aigen_studio",
+  "n_queries": 193,
+  "n_gallery": 59254,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "graded_from": "attrs",
+  "k_values": [
+    1,
+    5,
+    10,
+    20
+  ],
+  "metrics": {
+    "exact_recall@1": 0.2694,
+    "exact_recall@5": 0.4611,
+    "exact_recall@10": 0.5389,
+    "exact_recall@20": 0.601,
+    "coarse_recall@1": 0.5751,
+    "coarse_recall@5": 0.7668,
+    "coarse_recall@10": 0.8653,
+    "coarse_recall@20": 0.8964,
+    "fine_recall@1": 0.1606,
+    "fine_recall@5": 0.3057,
+    "fine_recall@10": 0.3834,
+    "fine_recall@20": 0.4197,
+    "exact_precision@1": 0.2694,
+    "exact_precision@5": 0.1585,
+    "exact_precision@10": 0.1181,
+    "exact_precision@20": 0.078,
+    "coarse_precision@1": 0.5751,
+    "coarse_precision@5": 0.4746,
+    "coarse_precision@10": 0.4093,
+    "coarse_precision@20": 0.3254,
+    "fine_precision@1": 0.1606,
+    "fine_precision@5": 0.1264,
+    "fine_precision@10": 0.1057,
+    "fine_precision@20": 0.0723,
+    "ndcg@1": 0.4007,
+    "ndcg@5": 0.3639,
+    "ndcg@10": 0.3425,
+    "ndcg@20": 0.3219
+  },
+  "run": {
+    "timestamp": "2026-09-09T17:31:17",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.5,
+    "limit": null
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "model": "dinov3_vitb16",
+  "model_metadata": {
+    "hf_id": "facebook/dinov3-vitb16-pretrain-lvd1689m",
+    "pooling": "cls"
+  },
+  "embed_dim": 768,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "real_streetlook",
+  "n_queries": 981,
+  "n_gallery": 61553,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "graded_from": "attrs",
+  "k_values": [
+    1,
+    5,
+    10,
+    20
+  ],
+  "metrics": {
+    "exact_recall@1": 0.2599,
+    "exact_recall@5": 0.4343,
+    "exact_recall@10": 0.4924,
+    "exact_recall@20": 0.5494,
+    "coarse_recall@1": 0.5851,
+    "coarse_recall@5": 0.739,
+    "coarse_recall@10": 0.8186,
+    "coarse_recall@20": 0.8665,
+    "fine_recall@1": 0.1978,
+    "fine_recall@5": 0.3252,
+    "fine_recall@10": 0.3761,
+    "fine_recall@20": 0.4108,
+    "exact_precision@1": 0.2599,
+    "exact_precision@5": 0.1346,
+    "exact_precision@10": 0.0914,
+    "exact_precision@20": 0.0578,
+    "coarse_precision@1": 0.5851,
+    "coarse_precision@5": 0.4373,
+    "coarse_precision@10": 0.3845,
+    "coarse_precision@20": 0.3172,
+    "fine_precision@1": 0.1978,
+    "fine_precision@5": 0.1115,
+    "fine_precision@10": 0.08,
+    "fine_precision@20": 0.0551,
+    "ndcg@1": 0.4152,
+    "ndcg@5": 0.3489,
+    "ndcg@10": 0.3251,
+    "ndcg@20": 0.3001
+  },
+  "run": {
+    "timestamp": "2026-09-09T17:31:05",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.5,
+    "limit": null
+  }
+}
