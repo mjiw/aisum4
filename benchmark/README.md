@@ -100,6 +100,76 @@ git으로 공유하는 것은 **코드와 결과 JSON(36KB)뿐**입니다. 데�
 `config.json`의 이 값이 모든 실행에 적용되고 결과 JSON에도 기록됩니다.
 벤치마크 새 버전으로 옮길 때는 이 값을 바꾸고 **전원이 다시 실행**해야 합니다.
 
+## 실험 환경 맞추기 (팀 공유)
+
+모델을 각자 다르게 쓰더라도 **아래는 전원이 동일해야** 숫자 비교가 성립합니다.
+`config.json`에 다 들어 있으므로 이 저장소를 클론해서 쓰면 자동으로 맞습니다.
+직접 구현하시는 경우 아래를 그대로 따라 주세요.
+
+### 1) 반드시 같아야 하는 것 — 다르면 비교 무효
+
+| 항목 | 값 | 왜 |
+|---|---|---|
+| 판정 로직 | `relevance.py` | 정답 기준이 다르면 숫자의 의미가 달라짐 |
+| 집계 | `metrics.py` | Recall/Precision/nDCG 정의 |
+| LookBench revision | `151449aa3a906899f29fd3e0a81a21e83a48c569` (`v20251201`) | **반기마다 갱신되는 live 벤치마크** |
+| SOP revision | `24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69` | |
+| noise 풀 | **포함** (LookBench) | 빼면 갤러리가 1/15로 줄어 최대 11pp 부풀려짐 |
+| 임베딩 정규화 | **L2 정규화 필수** | 안 하면 코사인이 아니라 내적이 되어 결과가 달라짐 |
+| SOP 프로토콜 | leave-one-out, 자기 자신 제외 | 빼지 않으면 Recall@1이 1.0으로 나옴 |
+
+### 2) 모델마다 달라도 되는 것 — 단, 결과에 기록할 것
+
+| 항목 | 예 |
+|---|---|
+| 모델 / 가중치 | `hf_id` + `revision` (결과 JSON의 `model_metadata`에 자동 기록) |
+| 임베딩 차원 | DINOv3 ViT-B/16 = 768 |
+| pooling | `cls` / `mean` — 모델마다 최적이 다르므로 어느 쪽을 썼는지 반드시 남길 것 |
+| batch_size | 결과에 영향 없음 (메모리 사정에 맞게) |
+
+### 3) 평가 설정
+
+| | LookBench | SOP |
+|---|---|---|
+| K | 1, 5, 10, 20 | 1, 10, 100, 1000 |
+| topk | 20 | 1000 |
+| 주 지표 | **Fine Recall@1 / @10** | **Recall@1 / @10** (exact) |
+| fine_mode | `exact` (속성 집합 완전 일치) | — |
+| graded_from | `attrs` | `exact` (속성 라벨이 없음) |
+| exclude_self | false | **true** |
+| 쿼리 / 갤러리 | 서브셋별 상이 (README 위쪽 표 참고) | 60,502 / 60,502 |
+
+집계는 논문 Table 3과 같이 **쿼리 수 가중 평균**(Overall)을 씁니다.
+서브셋 쿼리 수가 160~1,011로 6배 차이나므로 단순 평균과 값이 다릅니다.
+
+### 4) 참고: 기준 실행 환경
+
+숫자가 안 맞을 때 대조용입니다. 버전이 달라도 대체로 재현되지만,
+전처리(`AutoImageProcessor`) 동작이 바뀌면 임베딩이 달라질 수 있습니다.
+
+```
+python 3.13.11 / Windows 11
+torch 2.13.0+cu130 (CUDA 13.0, RTX 4090)
+transformers 5.4.0 / datasets 3.6.0 / numpy 2.4.1
+```
+
+### 5) 새 모델 추가하는 법
+
+1. `benchmark/models/<이름>.py`에 `ImageEmbeddingModel` 상속 클래스 작성
+   (`embed()`가 L2 정규화를 해주므로 `_embed_raw`만 구현하면 됨)
+2. `benchmark/models/__init__.py`의 `_REGISTRY`에 한 줄 추가
+3. `config.json`의 `models`에 `hf_id`, `revision`, `embed_dim`, `pooling`, `batch_size` 추가
+4. 실행 후 `benchmark/results/*.json`을 저장소에 올리면 `python -m benchmark.compare`로 합산
+
+```bash
+python -m benchmark.run_eval --model <이름> --config real_studio_flat
+python -m benchmark.run_eval --model <이름> --config real_streetlook
+python -m benchmark.run_eval --model <이름> --config aigen_studio
+python -m benchmark.run_eval --model <이름> --config aigen_streetlook
+python -m benchmark.run_eval --model <이름> --dataset sop
+python -m benchmark.compare
+```
+
 ## 팀 협업 규칙
 
 1. **`relevance.py`와 `metrics.py`는 공통입니다.** 고치면 반드시 공유하고 전원 재실행.

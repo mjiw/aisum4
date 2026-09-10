@@ -56,7 +56,7 @@ def _run(args):
 
     # torch를 import하기 전에 정해야 embedding/base.py의 device 판정에 반영된다.
     if args.device == "cpu":
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"   # ""는 Windows에서 안 먹는다
 
     import numpy as np
     import torch
@@ -115,6 +115,8 @@ def _run(args):
         )
 
     exclude_self = bool(ds_cfg.get("exclude_self"))
+    model_meta = dict(model.model_metadata)      # model을 해제하기 전에 보관
+    model_dim, model_device = model.embed_dim, str(model.device)
 
     if args.dataset == "sop":
         # 단일 split이 쿼리이자 갤러리 (leave-one-out)
@@ -133,6 +135,13 @@ def _run(args):
         print(f"[data] 최종 갤러리 {gallery_vecs.shape[0]}장 "
               f"(noise {'제외' if args.no_noise else '포함'})")
 
+    # 인코딩이 끝나면 GPU를 놓아준다. 이후 검색/집계는 CPU 작업인데,
+    # 대량 인코딩 직후 GPU를 잡은 채로 진행하다 TDR로 프로세스가 통째로
+    # 죽는 일이 있었다(파이썬 예외 없이 즉사). 노출 시간을 줄인다.
+    del model
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
     k_values = ds_cfg["k_values"]
     top_idx, _ = search(query_vecs, gallery_vecs, ds_cfg["topk"],
                         exclude_self=exclude_self)
@@ -143,8 +152,8 @@ def _run(args):
 
     result = {
         "model": args.model,
-        "model_metadata": model.model_metadata,
-        "embed_dim": model.embed_dim,
+        "model_metadata": model_meta,
+        "embed_dim": model_dim,
         "dataset_name": args.dataset,
         "dataset": ds_cfg["repo_id"],
         "dataset_revision": ds_cfg.get("revision"),
@@ -160,7 +169,7 @@ def _run(args):
         "metrics": scores,
         "run": {
             "timestamp": datetime.now().isoformat(timespec="seconds"),
-            "device": str(model.device),
+            "device": model_device,
             "batch_size": batch_size,
             "gpu_memory_fraction": frac,
             "limit": args.limit,

@@ -2,6 +2,7 @@
   "model": "dinov2_vitb14",
   "model_metadata": {
     "hf_id": "facebook/dinov2-base",
+    "revision": "f9e44c814b77203eaa57a6bdbbd535f21ede1415",
     "pooling": "cls"
   },
   "embed_dim": 768,
@@ -53,10 +54,10 @@
     "ndcg@20": 0.3015
   },
   "run": {
-    "timestamp": "2026-09-09T17:31:44",
-    "device": "cuda",
+    "timestamp": "2026-09-10T11:59:31",
+    "device": "cpu",
     "batch_size": 16,
-    "gpu_memory_fraction": 0.5,
+    "gpu_memory_fraction": 0.35,
     "limit": null
   }
 }

@@ -49,7 +49,7 @@
     }
   },
   "eval": {
-    "gpu_memory_fraction": 0.5,
+    "gpu_memory_fraction": 0.35,
     "checkpoint_every": 2048
   },
   "models": {
@@ -58,14 +58,16 @@
       "embed_dim": 768,
       "pooling": "cls",
       "batch_size": 16,
-      "cache_dir": "./model_cache/dinov3"
+      "cache_dir": "./model_cache/dinov3",
+      "revision": "5931719e67bbdb9737e363e781fb0c67687896bc"
     },
     "dinov2_vitb14": {
       "hf_id": "facebook/dinov2-base",
       "embed_dim": 768,
       "pooling": "cls",
       "batch_size": 16,
-      "cache_dir": "./model_cache/dinov2"
+      "cache_dir": "./model_cache/dinov2",
+      "revision": "f9e44c814b77203eaa57a6bdbbd535f21ede1415"
     }
   }
 }

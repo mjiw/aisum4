@@ -1,0 +1,63 @@
+{
+  "model": "dinov2_vitb14",
+  "model_metadata": {
+    "hf_id": "facebook/dinov2-base",
+    "revision": "f9e44c814b77203eaa57a6bdbbd535f21ede1415",
+    "pooling": "cls"
+  },
+  "embed_dim": 768,
+  "dataset_name": "sop",
+  "dataset": "nyris/stanford-online-products-v1",
+  "dataset_revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+  "dataset_version": null,
+  "config": "test",
+  "n_queries": 60502,
+  "n_gallery": 60502,
+  "noise_pool": false,
+  "exclude_self": true,
+  "fine_mode": "exact",
+  "graded_from": "exact",
+  "k_values": [
+    1,
+    10,
+    100,
+    1000
+  ],
+  "metrics": {
+    "exact_recall@1": 0.55,
+    "exact_recall@10": 0.7109,
+    "exact_recall@100": 0.8395,
+    "exact_recall@1000": 0.9517,
+    "coarse_recall@1": 0.9412,
+    "coarse_recall@10": 0.9884,
+    "coarse_recall@100": 0.9985,
+    "coarse_recall@1000": 0.9999,
+    "fine_recall@1": 0.9412,
+    "fine_recall@10": 0.9884,
+    "fine_recall@100": 0.9985,
+    "fine_recall@1000": 0.9999,
+    "exact_precision@1": 0.55,
+    "exact_precision@10": 0.1833,
+    "exact_precision@100": 0.0278,
+    "exact_precision@1000": 0.0041,
+    "coarse_precision@1": 0.9412,
+    "coarse_precision@10": 0.8736,
+    "coarse_precision@100": 0.802,
+    "coarse_precision@1000": 0.7199,
+    "fine_precision@1": 0.9412,
+    "fine_precision@10": 0.8736,
+    "fine_precision@100": 0.802,
+    "fine_precision@1000": 0.7199,
+    "ndcg@1": 0.55,
+    "ndcg@10": 0.3328,
+    "ndcg@100": 0.3761,
+    "ndcg@1000": 0.4158
+  },
+  "run": {
+    "timestamp": "2026-09-10T12:00:19",
+    "device": "cpu",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

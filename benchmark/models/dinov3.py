@@ -39,9 +39,14 @@ class DinoV3(ImageEmbeddingModel):
         if self._pooling not in ("cls", "mean"):
             raise ValueError(f"pooling은 'cls' 또는 'mean'이어야 합니다: {self._pooling}")
 
+        # 가중치도 revision을 고정한다. 고정하지 않으면 HF에서 갱신됐을 때
+        # 팀원마다 다른 가중치를 받아 숫자 비교가 성립하지 않는다.
         cache_dir = self.model_cfg.get("cache_dir")
-        self._proc = AutoImageProcessor.from_pretrained(hf_id, cache_dir=cache_dir)
-        self._model = AutoModel.from_pretrained(hf_id, cache_dir=cache_dir)
+        rev = self.model_cfg.get("revision")
+        self._revision = rev
+        self._proc = AutoImageProcessor.from_pretrained(hf_id, cache_dir=cache_dir,
+                                                        revision=rev)
+        self._model = AutoModel.from_pretrained(hf_id, cache_dir=cache_dir, revision=rev)
         self._model = self._model.to(self.device).eval()
 
         # CLS 1개 + register 토큰 n개 다음부터가 패치 토큰이다.
@@ -54,7 +59,8 @@ class DinoV3(ImageEmbeddingModel):
 
     @property
     def model_metadata(self) -> dict:
-        return {"hf_id": self._hf_id, "pooling": self._pooling}
+        return {"hf_id": self._hf_id, "revision": self._revision,
+                "pooling": self._pooling}
 
     def preprocess(self, pil_image):
         img = pil_image if pil_image.mode == "RGB" else pil_image.convert("RGB")
