@@ -69,6 +69,14 @@
       "batch_size": 16,
       "cache_dir": "./model_cache/dinov2",
       "revision": "f9e44c814b77203eaa57a6bdbbd535f21ede1415"
+    },
+    "gr_lite": {
+      "hf_id": "srpone/gr-lite",
+      "embed_dim": 1024,
+      "pooling": "cls",
+      "batch_size": 16,
+      "cache_dir": "./model_cache/gr_lite",
+      "revision": "a8057f8aadaaab91670ad37949f6e1b5aa187e29"
     }
   }
 }

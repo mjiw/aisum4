@@ -1,4 +1,14 @@
 # benchmark/ 전용 추가 의존성. 루트 requirements.txt와 함께 설치한다.
-transformers>=4.56
+#
+# 상한 <5 는 gr_lite 때문이다. gr-lite는 커스텀 아키텍처라 저장소의
+# modeling_gr_lite.py를 받아 실행하는데(trust_remote_code), 그 코드가
+# transformers 4.49 기준으로 작성돼 5.x의 PreTrainedModel 계약을 만족하지 않는다.
+# 5.17에서 실제로 아래처럼 죽는다:
+#   AttributeError: 'GRLiteModel' object has no attribute 'all_tied_weights_keys'
+# 모델 저장소가 5.x를 지원하기 전까지는 4.5x를 쓴다. 하한 4.56은 DINOv3용이다.
+transformers>=4.56,<5
 datasets>=3.6
 huggingface_hub
+# gr_lite는 preprocessor_config.json이 없어 모델 카드의 torchvision transform을
+# 그대로 쓴다. AutoImageProcessor를 쓰는 dinov3 계열에는 필요 없다.
+torchvision

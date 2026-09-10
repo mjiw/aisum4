@@ -216,8 +216,57 @@ LookBench는 noise 임베딩이 서브셋 간 재사용되어 첫 서브셋만 �
 |---|---|---|
 | DINOv3 ViT-B/16 | 768 | (이 폴더) |
 | DINOv2 ViT-B/14 | 768 | 파이프라인 검증 대역 겸 비교 baseline |
-| DINOv2 ViT-B/14 | 768 | 파이프라인 검증 대역 겸 비교 baseline |
+| GR-Lite (ViT-L/16) | 1024 | `models/gr_lite.py` |
 | DreamSim ensemble | 1792 | 현재 파이프라인 baseline |
+
+### GR-Lite 참고사항
+
+`srpone/gr-lite`는 **LookBench를 만든 팀이 낸 패션 검색 전용 모델**입니다.
+DINOv3 ViT-L/16을 파인튜닝했지만 가중치가 저장소에 통째로 들어 있어
+`facebook/dinov3-*` 승인 없이 받아집니다(apache-2.0, gated 아님).
+
+다른 모델과 다르게 처리해야 하는 점이 세 가지 있습니다.
+
+- **transformers 5.x에서는 못 돌립니다.** 저장소의 모델링 코드가 4.49 기준으로
+  작성돼 5.x의 `PreTrainedModel` 계약을 만족하지 않습니다. 5.17에서
+  `AttributeError: 'GRLiteModel' object has no attribute 'all_tied_weights_keys'`로
+  죽습니다. 그래서 `requirements.txt`에 `transformers>=4.56,<5`로 상한을 걸었습니다.
+  (기존 DINOv2/v3 결과는 5.4.0에서 나온 것이지만 이미 커밋돼 있어 재실행이 필요 없습니다.
+  재실행하게 되면 전처리가 달라질 수 있으니 그때 확인하세요.)
+- **전처리를 직접 만듭니다.** 저장소에 `preprocessor_config.json`이 없어
+  `AutoImageProcessor`가 뜨지 않습니다. 모델 카드가 명시한 336x336 리사이즈 +
+  ImageNet 정규화를 `models/gr_lite.py`에 그대로 옮겼습니다. 이 때문에
+  `torchvision` 의존성이 추가됐습니다.
+- **커스텀 코드를 실행합니다.** `model_type`이 `gr_lite`라 transformers에
+  내장돼 있지 않고 저장소의 `modeling_gr_lite.py`를 받아 돌립니다
+  (`trust_remote_code=True`). revision을 고정해 실행 코드도 함께 고정했습니다.
+
+`pooler_output`이 이미 L2 정규화된 CLS라 `base.embed()`의 정규화는 멱등입니다.
+pooling은 모델 내부에 고정돼 있어 `cls`/`mean` 선택이 불가능합니다.
+
+**실행 (CUDA 머신 권장)**
+
+```bash
+python -m benchmark.run_eval --model gr_lite --config real_studio_flat
+python -m benchmark.run_eval --model gr_lite --config aigen_studio
+python -m benchmark.run_eval --model gr_lite --config real_streetlook
+python -m benchmark.run_eval --model gr_lite --config aigen_streetlook
+python -m benchmark.run_eval --model gr_lite --dataset sop
+python -m benchmark.compare
+```
+
+첫 명령이 noise 풀 58,275장을 인코딩하므로 가장 오래 걸리고, 이후 서브셋은
+그 캐시를 재사용합니다. 인코딩 총량은 약 13만 장입니다.
+
+> **GR-Lite는 무겁습니다.** DINOv3 ViT-B/16(224px)에 비해 ViT-L/16 + 336px라
+> 이미지당 연산량이 약 10배입니다. 배치 크기를 키워도 나아지지 않습니다
+> (M4 실측 16/32/64 → 3.9/3.9/4.1 img/s, 연산 병목).
+> VRAM이 부족하면 `--batch-size`를 낮추세요. 결과에는 영향이 없습니다.
+
+> **Apple Silicon에서는 비권장**: `embedding/base.py`는 `cuda` 아니면 `cpu`만
+> 고르므로 `models/gr_lite.py`에서만 MPS로 승격합니다(공유 파일은 건드리지 않음).
+> 그래도 M4 실측 약 4 img/s라 13만 장에 **9시간 이상** 걸립니다. CUDA 머신을 쓰세요.
+> `--device cpu`를 주면 MPS 승격 없이 그대로 CPU로 갑니다.
 
 ## 데이터셋 구조 (확인 완료)
 
