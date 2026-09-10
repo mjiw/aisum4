@@ -11,6 +11,8 @@ _REGISTRY = {
     # DINOv2도 transformers의 AutoModel 인터페이스가 같아 같은 래퍼를 쓴다.
     # DINOv3 승인 대기 중 파이프라인 검증용이자, 비교 baseline으로도 쓴다.
     "dinov2_vitb14": ("dinov3", "DinoV3"),
+    # 현재 파이프라인이 쓰는 모델. 기존 구현을 재사용한다.
+    "dreamsim": ("dreamsim", "DreamSim"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }
