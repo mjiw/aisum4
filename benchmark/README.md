@@ -57,28 +57,36 @@ python -m benchmark.compare --config real_studio_flat --sort-by fine_recall@1 --
 인코딩 → 검색 → 판정 → 집계 4단계이고, 임베딩이 캐시되므로
 metric을 고쳐 다시 돌릴 때는 인코딩을 건너뜁니다.
 
-## 지표 정의
+## 지표
 
-`relevance.py`가 판정 기준 4종을 만들고, `metrics.py`가 이를 집계합니다.
+**LookBench — 4개**
 
-| 기준 | 정답 조건 |
+| 지표 | 정답 조건 |
 |---|---|
-| `exact` | `item_id` 일치 — 완전히 같은 상품 |
-| `coarse` | `category` 일치 |
-| `fine` | `category` + 속성 전부 일치 (`fine_mode`로 조절) |
-| `graded` | category 일치 시 속성 Jaccard 유사도 (0~1), nDCG용 |
+| `coarse_recall@1`, `@10` | category 일치 |
+| `fine_recall@1`, `@10` | category + 속성 전부 일치 |
 
-- **Recall@K** — top-K 안에 정답이 하나라도 있으면 1 (hit rate). 검색 벤치마크 관례.
-- **Precision@K** — top-K 중 정답 비율.
-- **nDCG@K** — `graded` 기반. IDCG는 갤러리 전체의 이상적 랭킹에서 계산.
+**SOP — 2개**
+
+| 지표 | 정답 조건 |
+|---|---|
+| `exact_recall@1`, `@10` | `item_id` 일치 (같은 상품) |
+
+Recall@K는 검색 벤치마크 관례대로 **top-K 안에 정답이 하나라도 있으면 1**(hit rate)이며
+쿼리 전체 평균입니다. LookBench 논문과 SOP 표준이 모두 이 정의를 씁니다.
+
+SOP에 `fine`을 쓰지 않는 이유는 속성 라벨이 없어 `coarse`와 같은 값이 되기 때문입니다.
+그 값은 카테고리 12종 기준이라 어떤 모델이든 0.94~0.97이 나와 판별력이 없습니다.
+LookBench에 `exact`를 쓰지 않는 이유는 공식 지표가 아니기 때문입니다
+(LookBench는 Coarse Recall / Fine Recall / nDCG / MRR / MAP를 보고합니다).
 
 `fine_mode`는 `config.json`에서 바꿉니다.
 - `exact` (기본): 쿼리와 갤러리의 속성 집합이 완전히 같아야 정답
 - `subset`: 쿼리 속성이 갤러리 아이템에 모두 포함되면 정답
 
-> LookBench 논문의 Fine Recall 정의는 "exact category and all attributes to match"이며,
-> 집합 상등인지 포함인지 문구만으로는 모호합니다. 공식 수치와 맞춰보려면 두 모드를
-> 모두 돌려 어느 쪽이 리더보드와 일치하는지 확인하세요.
+> 논문 문구가 "exact category and all attributes to match"라 집합 상등인지 포함인지
+> 모호하지만, 실측상 차이는 최대 1.6pp입니다. 속성 개수가 대부분 정확히 4개
+> (main_attribute 1 + other_attributes 3)라 두 정의가 거의 같아지기 때문입니다.
 
 ## 데이터셋은 git에 올리지 않습니다
 
@@ -102,23 +110,45 @@ git으로 공유하는 것은 **코드와 결과 JSON(36KB)뿐**입니다. 데�
 
 ## 실험 환경 맞추기 (팀 공유)
 
-모델을 각자 다르게 쓰더라도 **아래는 전원이 동일해야** 숫자 비교가 성립합니다.
-`config.json`에 다 들어 있으므로 이 저장소를 클론해서 쓰면 자동으로 맞습니다.
-직접 구현하시는 경우 아래를 그대로 따라 주세요.
+### 팀원 진행 순서
 
-### 1) 반드시 같아야 하는 것 — 다르면 비교 무효
+```bash
+git fetch origin
+git checkout -b test/{자기모델명} origin/test/dino-v3
+pip install -r requirements.txt -r benchmark/requirements.txt
+```
+
+그다음 클로드 코드에 이렇게 요청하면 됩니다:
+
+> benchmark 폴더 코드 참고해서 동일한 환경으로 **{자기 모델}** 성능 평가 진행해줘.
+> LookBench 4개 서브셋이랑 SOP 데이터셋 전부.
+
+끝나면 `benchmark/results/*.json`을 커밋해서 push하세요.
+모으면 `python -m benchmark.compare`로 자동 비교표가 나옵니다.
+
+### HuggingFace 토큰 (대부분 불필요)
+
+데이터셋(LookBench, SOP)은 **gated가 아니라 토큰 없이 받아집니다.** 토큰이 필요한 건
+**gated 모델**을 쓸 때뿐입니다 — 예를 들어 `facebook/dinov3-*`는 Meta 수동 승인이 필요합니다.
+
+해당되는 경우에만 `hf auth login` 하시면 되고, 환경변수 `HF_TOKEN`이나
+저장소 루트의 `token.txt`(gitignore 처리됨, 각자 본인 토큰)도 인식합니다.
+
+### 반드시 같아야 하는 것 — 다르면 비교 무효
 
 | 항목 | 값 | 왜 |
 |---|---|---|
 | 판정 로직 | `relevance.py` | 정답 기준이 다르면 숫자의 의미가 달라짐 |
-| 집계 | `metrics.py` | Recall/Precision/nDCG 정의 |
+| 집계 | `metrics.py` | Recall@K 정의 |
 | LookBench revision | `151449aa3a906899f29fd3e0a81a21e83a48c569` (`v20251201`) | **반기마다 갱신되는 live 벤치마크** |
 | SOP revision | `24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69` | |
 | noise 풀 | **포함** (LookBench) | 빼면 갤러리가 1/15로 줄어 최대 11pp 부풀려짐 |
 | 임베딩 정규화 | **L2 정규화 필수** | 안 하면 코사인이 아니라 내적이 되어 결과가 달라짐 |
 | SOP 프로토콜 | leave-one-out, 자기 자신 제외 | 빼지 않으면 Recall@1이 1.0으로 나옴 |
 
-### 2) 모델마다 달라도 되는 것 — 단, 결과에 기록할 것
+`config.json`에 다 들어 있으므로 이 저장소를 그대로 쓰면 자동으로 맞습니다.
+
+### 모델마다 달라도 되는 것 — 단, 결과에 기록할 것
 
 | 항목 | 예 |
 |---|---|
@@ -127,22 +157,21 @@ git으로 공유하는 것은 **코드와 결과 JSON(36KB)뿐**입니다. 데�
 | pooling | `cls` / `mean` — 모델마다 최적이 다르므로 어느 쪽을 썼는지 반드시 남길 것 |
 | batch_size | 결과에 영향 없음 (메모리 사정에 맞게) |
 
-### 3) 평가 설정
+### 평가 설정
 
 | | LookBench | SOP |
 |---|---|---|
-| K | 1, 5, 10, 20 | 1, 10, 100, 1000 |
-| topk | 20 | 1000 |
-| 주 지표 | **Fine Recall@1 / @10** | **Recall@1 / @10** (exact) |
-| fine_mode | `exact` (속성 집합 완전 일치) | — |
-| graded_from | `attrs` | `exact` (속성 라벨이 없음) |
+| 판정 기준 | `coarse`, `fine` | `exact` |
+| K | 1, 10 | 1, 10 |
+| 지표 개수 | **4개** | **2개** |
+| fine_mode | `exact` | — |
 | exclude_self | false | **true** |
-| 쿼리 / 갤러리 | 서브셋별 상이 (README 위쪽 표 참고) | 60,502 / 60,502 |
+| 쿼리 / 갤러리 | 서브셋별 상이 (아래 표) | 60,502 / 60,502 |
 
-집계는 논문 Table 3과 같이 **쿼리 수 가중 평균**(Overall)을 씁니다.
-서브셋 쿼리 수가 160~1,011로 6배 차이나므로 단순 평균과 값이 다릅니다.
+서브셋 통합 점수는 논문 Table 3과 같이 **쿼리 수 가중 평균**을 씁니다.
+서브셋 쿼리 수가 160~1,011로 6배 차이나 단순 평균과 값이 다릅니다.
 
-### 4) 참고: 기준 실행 환경
+### 참고: 기준 실행 환경
 
 숫자가 안 맞을 때 대조용입니다. 버전이 달라도 대체로 재현되지만,
 전처리(`AutoImageProcessor`) 동작이 바뀌면 임베딩이 달라질 수 있습니다.
@@ -153,13 +182,12 @@ torch 2.13.0+cu130 (CUDA 13.0, RTX 4090)
 transformers 5.4.0 / datasets 3.6.0 / numpy 2.4.1
 ```
 
-### 5) 새 모델 추가하는 법
+### 새 모델 추가하는 법
 
 1. `benchmark/models/<이름>.py`에 `ImageEmbeddingModel` 상속 클래스 작성
    (`embed()`가 L2 정규화를 해주므로 `_embed_raw`만 구현하면 됨)
 2. `benchmark/models/__init__.py`의 `_REGISTRY`에 한 줄 추가
 3. `config.json`의 `models`에 `hf_id`, `revision`, `embed_dim`, `pooling`, `batch_size` 추가
-4. 실행 후 `benchmark/results/*.json`을 저장소에 올리면 `python -m benchmark.compare`로 합산
 
 ```bash
 python -m benchmark.run_eval --model <이름> --config real_studio_flat
@@ -169,6 +197,9 @@ python -m benchmark.run_eval --model <이름> --config aigen_streetlook
 python -m benchmark.run_eval --model <이름> --dataset sop
 python -m benchmark.compare
 ```
+
+소요 시간은 갤러리 6만 장 인코딩이 대부분입니다. RTX 4090 기준 데이터셋당 10분 내외이고,
+LookBench는 noise 임베딩이 서브셋 간 재사용되어 첫 서브셋만 오래 걸립니다.
 
 ## 팀 협업 규칙
 

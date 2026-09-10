@@ -62,11 +62,16 @@ def _run(args):
     import torch
 
     from benchmark.data import lookbench, sop
+    from benchmark.hf_auth import ensure_login
     from benchmark.encode import encode_or_load
     from benchmark.metrics import evaluate
     from benchmark.models import create_model
     from benchmark.relevance import RelevanceIndex
     from benchmark.retrieve import search
+
+    # gated 모델(DINOv3 등)과 rate limit 때문에 가능하면 로그인해 둔다.
+    # 데이터셋 자체는 gated가 아니라 미로그인이어도 진행된다.
+    ensure_login()
 
     with open(CONFIG_PATH, encoding="utf-8") as f:
         cfg = json.load(f)
@@ -146,9 +151,9 @@ def _run(args):
     top_idx, _ = search(query_vecs, gallery_vecs, ds_cfg["topk"],
                         exclude_self=exclude_self)
 
-    rel_index = RelevanceIndex(gallery_metas, fine_mode=ds_cfg["fine_mode"],
-                               graded_from=ds_cfg.get("graded_from", "attrs"))
-    scores = evaluate(query_metas, top_idx, rel_index, k_values)
+    criteria = ds_cfg["criteria"]
+    rel_index = RelevanceIndex(gallery_metas, fine_mode=ds_cfg["fine_mode"])
+    scores = evaluate(query_metas, top_idx, rel_index, k_values, criteria)
 
     result = {
         "model": args.model,
@@ -164,7 +169,7 @@ def _run(args):
         "noise_pool": args.dataset == "lookbench" and not args.no_noise,
         "exclude_self": exclude_self,
         "fine_mode": ds_cfg["fine_mode"],
-        "graded_from": ds_cfg.get("graded_from", "attrs"),
+        "criteria": criteria,
         "k_values": k_values,
         "metrics": scores,
         "run": {

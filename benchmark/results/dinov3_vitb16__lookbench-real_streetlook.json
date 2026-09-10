@@ -16,45 +16,22 @@
   "noise_pool": true,
   "exclude_self": false,
   "fine_mode": "exact",
-  "graded_from": "attrs",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
   "k_values": [
     1,
-    5,
-    10,
-    20
+    10
   ],
   "metrics": {
-    "exact_recall@1": 0.2599,
-    "exact_recall@5": 0.4343,
-    "exact_recall@10": 0.4924,
-    "exact_recall@20": 0.5494,
     "coarse_recall@1": 0.5851,
-    "coarse_recall@5": 0.739,
     "coarse_recall@10": 0.8186,
-    "coarse_recall@20": 0.8665,
     "fine_recall@1": 0.1978,
-    "fine_recall@5": 0.3252,
-    "fine_recall@10": 0.3761,
-    "fine_recall@20": 0.4108,
-    "exact_precision@1": 0.2599,
-    "exact_precision@5": 0.1346,
-    "exact_precision@10": 0.0914,
-    "exact_precision@20": 0.0578,
-    "coarse_precision@1": 0.5851,
-    "coarse_precision@5": 0.4373,
-    "coarse_precision@10": 0.3845,
-    "coarse_precision@20": 0.3172,
-    "fine_precision@1": 0.1978,
-    "fine_precision@5": 0.1115,
-    "fine_precision@10": 0.08,
-    "fine_precision@20": 0.0551,
-    "ndcg@1": 0.4152,
-    "ndcg@5": 0.3489,
-    "ndcg@10": 0.3251,
-    "ndcg@20": 0.3001
+    "fine_recall@10": 0.3761
   },
   "run": {
-    "timestamp": "2026-09-10T11:58:59",
+    "timestamp": "2026-09-10T14:41:37",
     "device": "cpu",
     "batch_size": 16,
     "gpu_memory_fraction": 0.35,

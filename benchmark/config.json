@@ -19,14 +19,15 @@
       "noise_config": "noise",
       "k_values": [
         1,
-        5,
-        10,
-        20
+        10
       ],
-      "topk": 20,
+      "topk": 10,
       "fine_mode": "exact",
-      "graded_from": "attrs",
-      "exclude_self": false
+      "exclude_self": false,
+      "criteria": [
+        "coarse",
+        "fine"
+      ]
     },
     "sop": {
       "repo_id": "nyris/stanford-online-products-v1",
@@ -38,14 +39,14 @@
       "noise_config": null,
       "k_values": [
         1,
-        10,
-        100,
-        1000
+        10
       ],
-      "topk": 1000,
+      "topk": 10,
       "fine_mode": "exact",
-      "graded_from": "exact",
-      "exclude_self": true
+      "exclude_self": true,
+      "criteria": [
+        "exact"
+      ]
     }
   },
   "eval": {
