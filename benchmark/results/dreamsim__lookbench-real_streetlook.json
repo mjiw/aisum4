@@ -1,0 +1,38 @@
+{
+  "model": "dreamsim",
+  "model_metadata": {
+    "dreamsim_type": "ensemble"
+  },
+  "embed_dim": 1792,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "real_streetlook",
+  "n_queries": 981,
+  "n_gallery": 61553,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "coarse_recall@1": 0.6473,
+    "coarse_recall@10": 0.8644,
+    "fine_recall@1": 0.2559,
+    "fine_recall@10": 0.4608
+  },
+  "run": {
+    "timestamp": "2026-09-10T15:23:04",
+    "device": "cpu",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

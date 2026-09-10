@@ -70,6 +70,12 @@
       "cache_dir": "./model_cache/dinov2",
       "revision": "f9e44c814b77203eaa57a6bdbbd535f21ede1415"
     },
+    "dreamsim": {
+      "dreamsim_type": "ensemble",
+      "embed_dim": 1792,
+      "batch_size": 16,
+      "cache_dir": "./model_cache/dreamsim"
+    },
     "gr_lite": {
       "hf_id": "srpone/gr-lite",
       "embed_dim": 1024,

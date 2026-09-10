@@ -183,7 +183,9 @@ def _run(args):
 
     out_dir = Path(data_cfg["output_dir"])
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"{args.model}__{args.dataset}-{target}.json"
+    # limit을 건 실행은 부분 결과이므로 전체 실행 결과를 덮어쓰지 않게 파일명을 분리한다
+    suffix = f"-limit{args.limit}" if args.limit else ""
+    out_path = out_dir / f"{args.model}__{args.dataset}-{target}{suffix}.json"
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
 

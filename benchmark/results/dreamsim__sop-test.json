@@ -1,0 +1,35 @@
+{
+  "model": "dreamsim",
+  "model_metadata": {
+    "dreamsim_type": "ensemble"
+  },
+  "embed_dim": 1792,
+  "dataset_name": "sop",
+  "dataset": "nyris/stanford-online-products-v1",
+  "dataset_revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+  "dataset_version": null,
+  "config": "test",
+  "n_queries": 60502,
+  "n_gallery": 60502,
+  "noise_pool": false,
+  "exclude_self": true,
+  "fine_mode": "exact",
+  "criteria": [
+    "exact"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "exact_recall@1": 0.7014,
+    "exact_recall@10": 0.8441
+  },
+  "run": {
+    "timestamp": "2026-09-10T15:22:20",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

@@ -28,6 +28,8 @@ def load_results(dataset=None):
             d = json.load(f)
         if dataset and d.get("dataset_name") != dataset:
             continue
+        if d.get("run", {}).get("limit"):
+            continue          # --limit으로 만든 부분 결과는 비교에서 제외
         rows.append(d)
     return rows
 
