@@ -17,7 +17,23 @@ venv/
 *.zip
 results/
 
+# 모델 캐시 (DreamSim 등 다운로드된 가중치, 수 GB) / 임베딩 결과물
+model_cache/
+results/
+
 # IDE / OS
 .idea/
 .vscode/
 .DS_Store
+
+# 자격증명 (절대 커밋 금지)
+token.txt
+*.token
+
+# 벤치마크 캐시 (재생성 가능, 수백 MB)
+benchmark/.embed_cache/
+benchmark/.hf_cache/
+
+# 단, 평가 결과 JSON은 팀 공유용이므로 커밋한다 (위 results/ 규칙의 예외)
+!benchmark/results/
+!benchmark/results/*.json

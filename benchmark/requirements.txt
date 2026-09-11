@@ -1,0 +1,4 @@
+# benchmark/ 전용 추가 의존성. 루트 requirements.txt와 함께 설치한다.
+transformers>=4.56
+datasets>=3.6
+huggingface_hub

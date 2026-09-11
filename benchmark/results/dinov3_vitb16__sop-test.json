@@ -1,0 +1,37 @@
+{
+  "model": "dinov3_vitb16",
+  "model_metadata": {
+    "hf_id": "facebook/dinov3-vitb16-pretrain-lvd1689m",
+    "revision": "5931719e67bbdb9737e363e781fb0c67687896bc",
+    "pooling": "cls"
+  },
+  "embed_dim": 768,
+  "dataset_name": "sop",
+  "dataset": "nyris/stanford-online-products-v1",
+  "dataset_revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+  "dataset_version": null,
+  "config": "test",
+  "n_queries": 60502,
+  "n_gallery": 60502,
+  "noise_pool": false,
+  "exclude_self": true,
+  "fine_mode": "exact",
+  "criteria": [
+    "exact"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "exact_recall@1": 0.6532,
+    "exact_recall@10": 0.8073
+  },
+  "run": {
+    "timestamp": "2026-09-10T14:43:25",
+    "device": "cpu",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}
