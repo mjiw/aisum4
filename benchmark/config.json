@@ -1,0 +1,80 @@
+{
+  "data": {
+    "hf_cache_dir": "./benchmark/.hf_cache",
+    "embed_cache_dir": "./benchmark/.embed_cache",
+    "output_dir": "./benchmark/results"
+  },
+  "datasets": {
+    "lookbench": {
+      "repo_id": "srpone/look-bench",
+      "revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+      "dataset_version": "v20251201",
+      "default_config": "real_studio_flat",
+      "configs": [
+        "real_studio_flat",
+        "real_streetlook",
+        "aigen_studio",
+        "aigen_streetlook"
+      ],
+      "noise_config": "noise",
+      "k_values": [
+        1,
+        10
+      ],
+      "topk": 10,
+      "fine_mode": "exact",
+      "exclude_self": false,
+      "criteria": [
+        "coarse",
+        "fine"
+      ]
+    },
+    "sop": {
+      "repo_id": "nyris/stanford-online-products-v1",
+      "revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+      "default_config": "test",
+      "configs": [
+        "test"
+      ],
+      "noise_config": null,
+      "k_values": [
+        1,
+        10
+      ],
+      "topk": 10,
+      "fine_mode": "exact",
+      "exclude_self": true,
+      "criteria": [
+        "exact"
+      ]
+    }
+  },
+  "eval": {
+    "gpu_memory_fraction": 0.35,
+    "checkpoint_every": 2048
+  },
+  "models": {
+    "dinov3_vitb16": {
+      "hf_id": "facebook/dinov3-vitb16-pretrain-lvd1689m",
+      "embed_dim": 768,
+      "pooling": "cls",
+      "batch_size": 16,
+      "cache_dir": "./model_cache/dinov3",
+      "revision": "5931719e67bbdb9737e363e781fb0c67687896bc"
+    },
+    "dinov2_vitb14": {
+      "hf_id": "facebook/dinov2-base",
+      "embed_dim": 768,
+      "pooling": "cls",
+      "batch_size": 16,
+      "cache_dir": "./model_cache/dinov2",
+      "revision": "f9e44c814b77203eaa57a6bdbbd535f21ede1415"
+    },
+    "dreamsim": {
+      "dreamsim_type": "ensemble",
+      "embed_dim": 1792,
+      "batch_size": 16,
+      "cache_dir": "./model_cache/dreamsim"
+    }
+  }
+}
