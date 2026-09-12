@@ -1,0 +1,44 @@
+{
+  "model": "franca_vitb14",
+  "model_metadata": {
+    "hub_repo": "valeoai/Franca:v1.1.0",
+    "hub_entry": "franca_vitb14",
+    "weights": "IN21K_224",
+    "use_rasa_head": false,
+    "pooling": "cls",
+    "image_size": 224,
+    "resize_size": 256
+  },
+  "embed_dim": 768,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "real_streetlook",
+  "n_queries": 981,
+  "n_gallery": 61553,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "coarse_recall@1": 0.4771,
+    "coarse_recall@10": 0.7452,
+    "fine_recall@1": 0.1662,
+    "fine_recall@10": 0.3476
+  },
+  "run": {
+    "timestamp": "2026-09-11T17:20:14",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

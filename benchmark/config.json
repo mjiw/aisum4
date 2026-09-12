@@ -75,6 +75,17 @@
       "embed_dim": 1792,
       "batch_size": 16,
       "cache_dir": "./model_cache/dreamsim"
+    },
+    "franca_vitb14": {
+      "hub_repo": "valeoai/Franca:v1.1.0",
+      "hub_entry": "franca_vitb14",
+      "weights": "IN21K_224",
+      "use_rasa_head": false,
+      "embed_dim": 768,
+      "pooling": "cls",
+      "image_size": 224,
+      "batch_size": 16,
+      "cache_dir": "./model_cache/franca"
     }
   }
 }

@@ -1,0 +1,41 @@
+{
+  "model": "franca_vitb14",
+  "model_metadata": {
+    "hub_repo": "valeoai/Franca:v1.1.0",
+    "hub_entry": "franca_vitb14",
+    "weights": "IN21K_224",
+    "use_rasa_head": false,
+    "pooling": "cls",
+    "image_size": 224,
+    "resize_size": 256
+  },
+  "embed_dim": 768,
+  "dataset_name": "sop",
+  "dataset": "nyris/stanford-online-products-v1",
+  "dataset_revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+  "dataset_version": null,
+  "config": "test",
+  "n_queries": 60502,
+  "n_gallery": 60502,
+  "noise_pool": false,
+  "exclude_self": true,
+  "fine_mode": "exact",
+  "criteria": [
+    "exact"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "exact_recall@1": 0.5527,
+    "exact_recall@10": 0.7042
+  },
+  "run": {
+    "timestamp": "2026-09-11T17:31:58",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

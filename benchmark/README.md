@@ -182,12 +182,27 @@ torch 2.13.0+cu130 (CUDA 13.0, RTX 4090)
 transformers 5.4.0 / datasets 3.6.0 / numpy 2.4.1
 ```
 
+Franca 결과는 아래 환경에서 나왔습니다. Franca는 transformers를 거치지 않고
+전처리를 `models/franca.py`에서 torchvision으로 직접 정의하므로
+`AutoImageProcessor` 버전 차이의 영향을 받지 않습니다.
+
+```
+python 3.14.5 / Windows 11
+torch 2.13.0+cu130 (CUDA 13.1, RTX 5070 Ti)
+torchvision 0.28.0+cu130 / datasets 5.0.1 / numpy 2.5.2
+```
+
 ### 새 모델 추가하는 법
 
 1. `benchmark/models/<이름>.py`에 `ImageEmbeddingModel` 상속 클래스 작성
    (`embed()`가 L2 정규화를 해주므로 `_embed_raw`만 구현하면 됨)
 2. `benchmark/models/__init__.py`의 `_REGISTRY`에 한 줄 추가
 3. `config.json`의 `models`에 `hf_id`, `revision`, `embed_dim`, `pooling`, `batch_size` 추가
+
+HuggingFace가 아니라 **torch.hub로 배포되는 모델**(Franca 등)은 `hf_id`/`revision` 대신
+`hub_repo`(태그까지 고정), `hub_entry`, `weights`를 쓰고 전처리를 직접 정의합니다.
+`models/franca.py`를 참고하세요. 이때 `torch.hub.load(..., trust_repo=True)`가 필요합니다 —
+저장소 코드를 실행해도 되는지 묻는 프롬프트가 뜨는데, 비대화형 실행에서는 EOFError로 죽습니다.
 
 ```bash
 python -m benchmark.run_eval --model <이름> --config real_studio_flat
@@ -216,8 +231,8 @@ LookBench는 noise 임베딩이 서브셋 간 재사용되어 첫 서브셋만 �
 |---|---|---|
 | DINOv3 ViT-B/16 | 768 | (이 폴더) |
 | DINOv2 ViT-B/14 | 768 | 파이프라인 검증 대역 겸 비교 baseline |
-| DINOv2 ViT-B/14 | 768 | 파이프라인 검증 대역 겸 비교 baseline |
 | DreamSim ensemble | 1792 | 현재 파이프라인 baseline |
+| Franca ViT-B/14 | 768 | `models/franca.py` (In21K 224, RASA 미사용) |
 
 ## 데이터셋 구조 (확인 완료)
 

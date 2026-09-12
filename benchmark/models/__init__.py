@@ -13,6 +13,8 @@ _REGISTRY = {
     "dinov2_vitb14": ("dinov3", "DinoV3"),
     # 현재 파이프라인이 쓰는 모델. 기존 구현을 재사용한다.
     "dreamsim": ("dreamsim", "DreamSim"),
+    # Franca ViT-B/14 (valeoai). HF가 아니라 torch.hub로 배포된다.
+    "franca_vitb14": ("franca", "Franca"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }
