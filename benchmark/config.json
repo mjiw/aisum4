@@ -60,7 +60,7 @@
       "pooling": "cls",
       "batch_size": 16,
       "cache_dir": "./model_cache/dinov3",
-      "revision": "5931719e67bbdb9737e363e781fb0c67687896bc"
+      "revision": "9afbc02c9ad621afcdc22944370569736c517f55"
     },
     "dinov2_vitb14": {
       "hf_id": "facebook/dinov2-base",
@@ -75,6 +75,14 @@
       "embed_dim": 1792,
       "batch_size": 16,
       "cache_dir": "./model_cache/dreamsim"
+    },
+    "tianmu_mere": {
+      "hf_id": "TianmuLab/Tianmu-MERE",
+      "embed_dim": 512,
+      "pooling": "siglip_attn_pool",
+      "batch_size": 16,
+      "cache_dir": "./model_cache/tianmu_mere",
+      "revision": "9afbc02c9ad621afcdc22944370569736c517f55"
     }
   }
 }
