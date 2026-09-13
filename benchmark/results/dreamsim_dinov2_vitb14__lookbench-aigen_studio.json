@@ -1,0 +1,38 @@
+{
+  "model": "dreamsim_dinov2_vitb14",
+  "model_metadata": {
+    "dreamsim_type": "dinov2_vitb14"
+  },
+  "embed_dim": 768,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "aigen_studio",
+  "n_queries": 193,
+  "n_gallery": 59254,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "coarse_recall@1": 0.6114,
+    "coarse_recall@10": 0.8653,
+    "fine_recall@1": 0.2435,
+    "fine_recall@10": 0.399
+  },
+  "run": {
+    "timestamp": "2026-09-12T01:10:23",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}
