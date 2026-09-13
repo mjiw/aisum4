@@ -216,8 +216,8 @@ LookBench는 noise 임베딩이 서브셋 간 재사용되어 첫 서브셋만 �
 |---|---|---|
 | DINOv3 ViT-B/16 | 768 | (이 폴더) |
 | DINOv2 ViT-B/14 | 768 | 파이프라인 검증 대역 겸 비교 baseline |
-| DINOv2 ViT-B/14 | 768 | 파이프라인 검증 대역 겸 비교 baseline |
 | DreamSim ensemble | 1792 | 현재 파이프라인 baseline |
+| DreamSim DINOv2 ViT-B/14 | 768 | DreamSim single-branch. raw DINOv2와의 대조군 |
 
 ## 데이터셋 구조 (확인 완료)
 

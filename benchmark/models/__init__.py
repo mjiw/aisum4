@@ -13,6 +13,10 @@ _REGISTRY = {
     "dinov2_vitb14": ("dinov3", "DinoV3"),
     # 현재 파이프라인이 쓰는 모델. 기존 구현을 재사용한다.
     "dreamsim": ("dreamsim", "DreamSim"),
+    # DreamSim의 single-branch variant. raw DINOv2가 아니라 perceptual tuning된
+    # 가중치라 위의 "dinov2_vitb14"(facebook/dinov2-base)와는 다른 모델이다.
+    # 래퍼는 같고 config의 dreamsim_type만 다르다.
+    "dreamsim_dinov2_vitb14": ("dreamsim", "DreamSim"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }
