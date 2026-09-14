@@ -81,7 +81,9 @@ def test_perfect_ranking(index):
     got = evaluate([QUERY], np.array([[0, 1, 2, 3, 4]]), index, [1, 10],
                    ["coarse", "fine"], progress=False)
     assert got == {"coarse_recall@1": 1.0, "coarse_recall@10": 1.0,
-                   "fine_recall@1": 1.0, "fine_recall@10": 1.0}
+                   "fine_recall@1": 1.0, "fine_recall@10": 1.0,
+                   "coarse_map@1": 1.0, "coarse_map@10": 1.0,
+                   "fine_map@1": 1.0, "fine_map@10": 1.0}
 
 
 def test_worst_ranking(index):
@@ -94,7 +96,7 @@ def test_worst_ranking(index):
 
 def test_only_requested_criteria_are_returned(index):
     got = evaluate([QUERY], np.array([[0, 1]]), index, [1], ["exact"], progress=False)
-    assert set(got) == {"exact_recall@1"}
+    assert set(got) == {"exact_recall@1", "exact_map@1"}
 
 
 def test_rejects_unknown_criterion(index):
@@ -114,3 +116,29 @@ def test_averages_over_queries(index):
     got = evaluate([QUERY, q2], np.array([[0, 1], [0, 1]]), index, [1],
                    ["exact"], progress=False)
     assert got["exact_recall@1"] == 0.5
+
+
+# --- mAP@K 집계 (분모 = min(R, K), R = 갤러리 전체 정답 수) ---
+
+def test_map_denominator_is_total_relevant(index):
+    """exact 정답은 갤러리에 1개(A). 2위에서 찾으면 AP@10 = (1/2) / min(1, 10) = 0.5."""
+    got = evaluate([QUERY], np.array([[4, 0, 3, 1, 2]]), index, [1, 10],
+                   ["exact", "coarse"], progress=False)
+    assert got["exact_map@1"] == 0.0
+    assert got["exact_map@10"] == 0.5
+    # coarse 정답 4개(A,B,C,D)가 2~5위: (1/2 + 2/3 + 3/4 + 4/5) / min(4, 10)
+    assert got["coarse_map@10"] == pytest.approx((1/2 + 2/3 + 3/4 + 4/5) / 4, abs=1e-4)
+
+
+def test_map_denominator_caps_at_k(index):
+    """R(4) > K(1)이면 분모는 K. 1위가 coarse 정답이면 AP@1 = 1."""
+    got = evaluate([QUERY], np.array([[3, 4]]), index, [1], ["coarse"], progress=False)
+    assert got["coarse_map@1"] == 1.0
+
+
+def test_exclude_self_removes_query_from_total_relevant(index):
+    """SOP leave-one-out: 쿼리 자신이 갤러리에 있으면 R에서 1을 뺀다. A는 유일한 exact 정답이라 R=0."""
+    got = evaluate([QUERY], np.array([[1, 2]]), index, [10], ["exact"], progress=False,
+                   exclude_self=True)
+    assert got["exact_map@10"] == 0.0
+    assert got["exact_recall@10"] == 0.0

@@ -75,6 +75,16 @@
       "embed_dim": 1792,
       "batch_size": 16,
       "cache_dir": "./model_cache/dreamsim"
+    },
+    "qwen3_vl_embedding_2b": {
+      "hf_id": "Qwen/Qwen3-VL-Embedding-2B",
+      "embed_dim": 1024,
+      "full_dim": 2048,
+      "pooling": "last_token",
+      "dtype": "bfloat16",
+      "batch_size": 8,
+      "cache_dir": "./model_cache/qwen3_vl_embedding_2b",
+      "revision": "9f2f7e710d6d81056aa5c0a4f04764fec6bb7bda"
     }
   }
 }

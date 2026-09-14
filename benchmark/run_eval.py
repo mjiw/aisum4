@@ -153,7 +153,8 @@ def _run(args):
 
     criteria = ds_cfg["criteria"]
     rel_index = RelevanceIndex(gallery_metas, fine_mode=ds_cfg["fine_mode"])
-    scores = evaluate(query_metas, top_idx, rel_index, k_values, criteria)
+    scores = evaluate(query_metas, top_idx, rel_index, k_values, criteria,
+                      exclude_self=exclude_self)
 
     result = {
         "model": args.model,

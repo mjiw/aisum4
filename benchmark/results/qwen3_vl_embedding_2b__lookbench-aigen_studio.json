@@ -1,0 +1,51 @@
+{
+  "model": "qwen3_vl_embedding_2b",
+  "model_metadata": {
+    "hf_id": "Qwen/Qwen3-VL-Embedding-2B",
+    "revision": "9f2f7e710d6d81056aa5c0a4f04764fec6bb7bda",
+    "pooling": "last_token(eos)",
+    "instruction": "Represent the user's input.",
+    "input": "image_only",
+    "full_dim": 2048,
+    "mrl_dim": 1024,
+    "min_pixels": 4096,
+    "max_pixels": 1843200,
+    "dtype": "bfloat16"
+  },
+  "embed_dim": 1024,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "aigen_studio",
+  "n_queries": 193,
+  "n_gallery": 59254,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "coarse_recall@1": 0.8601,
+    "coarse_recall@10": 0.9741,
+    "fine_recall@1": 0.4093,
+    "fine_recall@10": 0.6425,
+    "coarse_map@1": 0.8601,
+    "coarse_map@10": 0.6097,
+    "fine_map@1": 0.4093,
+    "fine_map@10": 0.2945
+  },
+  "run": {
+    "timestamp": "2026-09-14T18:41:31",
+    "device": "cuda",
+    "batch_size": 8,
+    "gpu_memory_fraction": 0.6,
+    "limit": null
+  }
+}

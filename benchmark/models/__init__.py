@@ -13,6 +13,8 @@ _REGISTRY = {
     "dinov2_vitb14": ("dinov3", "DinoV3"),
     # 현재 파이프라인이 쓰는 모델. 기존 구현을 재사용한다.
     "dreamsim": ("dreamsim", "DreamSim"),
+    # Qwen3-VL 기반 멀티모달 임베딩. 이미지 단독 입력, 마지막 토큰 풀링, MRL 1024차원.
+    "qwen3_vl_embedding_2b": ("qwen3_vl_embedding", "Qwen3VLEmbedding"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }
