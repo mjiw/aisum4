@@ -13,6 +13,8 @@ _REGISTRY = {
     "dinov2_vitb14": ("dinov3", "DinoV3"),
     # 현재 파이프라인이 쓰는 모델. 기존 구현을 재사용한다.
     "dreamsim": ("dreamsim", "DreamSim"),
+    # 패션 특화 SigLIP2 (LookBench 저자 공개 모델). 비전 타워 MAP pooling.
+    "zooclaw_fashionsiglip2": ("zooclaw_siglip2", "ZooClawSigLip2"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }

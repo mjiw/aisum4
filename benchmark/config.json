@@ -75,6 +75,14 @@
       "embed_dim": 1792,
       "batch_size": 16,
       "cache_dir": "./model_cache/dreamsim"
+    },
+    "zooclaw_fashionsiglip2": {
+      "hf_id": "srpone/zooclaw-fashionsiglip2",
+      "embed_dim": 768,
+      "pooling": "map",
+      "batch_size": 16,
+      "cache_dir": "./model_cache/zooclaw_fashionsiglip2",
+      "revision": "c6b34b2a7b069855c2684979a196a7af61751797"
     }
   }
 }
