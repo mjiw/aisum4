@@ -30,10 +30,12 @@
   ],
   "metrics": {
     "exact_recall@1": 0.8085,
-    "exact_recall@10": 0.9268
+    "exact_recall@10": 0.9268,
+    "exact_map@1": 0.8085,
+    "exact_map@10": 0.7991
   },
   "run": {
-    "timestamp": "2026-09-13T18:28:03",
+    "timestamp": "2026-09-14T15:05:38",
     "device": "cuda",
     "batch_size": 16,
     "gpu_memory_fraction": 0.35,

@@ -33,10 +33,14 @@
     "coarse_recall@1": 0.9199,
     "coarse_recall@10": 0.9792,
     "fine_recall@1": 0.4055,
-    "fine_recall@10": 0.6568
+    "fine_recall@10": 0.6568,
+    "coarse_map@1": 0.9199,
+    "coarse_map@10": 0.8991,
+    "fine_map@1": 0.4055,
+    "fine_map@10": 0.4513
   },
   "run": {
-    "timestamp": "2026-09-13T17:27:18",
+    "timestamp": "2026-09-14T15:03:21",
     "device": "cuda",
     "batch_size": 16,
     "gpu_memory_fraction": 0.35,
