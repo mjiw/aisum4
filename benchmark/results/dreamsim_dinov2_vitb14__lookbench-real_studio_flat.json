@@ -22,14 +22,19 @@
     1,
     10
   ],
+  "map_k_values": [
+    10
+  ],
   "metrics": {
     "coarse_recall@1": 0.822,
     "coarse_recall@10": 0.9327,
     "fine_recall@1": 0.3798,
-    "fine_recall@10": 0.5955
+    "fine_recall@10": 0.5955,
+    "coarse_map@10": 0.5273,
+    "fine_map@10": 0.2725
   },
   "run": {
-    "timestamp": "2026-09-12T01:08:19",
+    "timestamp": "2026-09-14T16:23:51",
     "device": "cuda",
     "batch_size": 16,
     "gpu_memory_fraction": 0.35,

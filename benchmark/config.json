@@ -21,6 +21,9 @@
         1,
         10
       ],
+      "map_k_values": [
+        10
+      ],
       "topk": 10,
       "fine_mode": "exact",
       "exclude_self": false,
@@ -39,6 +42,9 @@
       "noise_config": null,
       "k_values": [
         1,
+        10
+      ],
+      "map_k_values": [
         10
       ],
       "topk": 10,

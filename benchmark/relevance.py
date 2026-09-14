@@ -78,6 +78,27 @@ class RelevanceIndex:
 
         return {"exact": exact, "coarse": same_cat, "fine": fine}
 
+    def count_relevant(self, query_meta: dict, criteria) -> dict:
+        """기준별 갤러리 전체 정답 수. mAP의 분모(min(R, K))에 쓴다.
+
+        exact/coarse는 정수 코드 bincount로 바로 구하고, fine만 전체 판정을 돈다.
+        """
+        if not hasattr(self, "_item_counts"):
+            self._item_counts = np.bincount(self.item_ids, minlength=len(self._item_to_id))
+            self._cat_counts = np.bincount(self.cat_ids, minlength=len(self._cat_to_id))
+
+        counts = {}
+        for crit in criteria:
+            if crit == "exact":
+                item_id = self._item_to_id.get(query_meta["item_id"], -1)
+                counts[crit] = int(self._item_counts[item_id]) if item_id >= 0 else 0
+            elif crit == "coarse":
+                cat_id = self._cat_to_id.get(query_meta["category"], -1)
+                counts[crit] = int(self._cat_counts[cat_id]) if cat_id >= 0 else 0
+            else:
+                counts[crit] = int(self.judge(query_meta)[crit].sum())
+        return counts
+
     def judge_at(self, query_meta: dict, rows) -> dict:
         """검색된 top-K 위치에서만 판정한다. 각 값은 길이 len(rows) 불리언 배열."""
         return self._judge_rows(query_meta, np.asarray(rows))
