@@ -1,0 +1,41 @@
+{
+  "model": "pe_core_l14_336",
+  "model_metadata": {
+    "hf_id": "timm/vit_pe_core_large_patch14_336.fb",
+    "revision": "e63206c8e3a0e9b699e40f31080eebd78fd2258e",
+    "timm_arch": "vit_pe_core_large_patch14_336",
+    "pooling": "attn_pool + proj",
+    "tower": "vision_only",
+    "image_size": 336,
+    "preprocess": "squash resize, bilinear, mean/std 0.5 (perception_models 공식)"
+  },
+  "embed_dim": 1024,
+  "dataset_name": "sop",
+  "dataset": "nyris/stanford-online-products-v1",
+  "dataset_revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+  "dataset_version": null,
+  "config": "test",
+  "n_queries": 60502,
+  "n_gallery": 60502,
+  "noise_pool": false,
+  "exclude_self": true,
+  "fine_mode": "exact",
+  "criteria": [
+    "exact"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "exact_recall@1": 0.8004,
+    "exact_recall@10": 0.9251
+  },
+  "run": {
+    "timestamp": "2026-09-14T16:30:22",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

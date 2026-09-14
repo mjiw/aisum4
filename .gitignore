@@ -37,3 +37,4 @@ benchmark/.hf_cache/
 # 단, 평가 결과 JSON은 팀 공유용이므로 커밋한다 (위 results/ 규칙의 예외)
 !benchmark/results/
 !benchmark/results/*.json
+data/
