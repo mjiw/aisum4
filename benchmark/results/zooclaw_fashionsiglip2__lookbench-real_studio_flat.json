@@ -12,8 +12,8 @@
   "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
   "dataset_version": "v20251201",
   "config": "real_studio_flat",
-  "n_queries": 200,
-  "n_gallery": 400,
+  "n_queries": 1011,
+  "n_gallery": 62226,
   "noise_pool": true,
   "exclude_self": false,
   "fine_mode": "exact",
@@ -26,16 +26,21 @@
     10
   ],
   "metrics": {
-    "coarse_recall@1": 0.565,
-    "coarse_recall@10": 0.61,
-    "fine_recall@1": 0.11,
-    "fine_recall@10": 0.19
+    "coarse_recall@1": 0.8952,
+    "coarse_recall@10": 0.9664,
+    "fine_recall@1": 0.4125,
+    "fine_recall@10": 0.6508
   },
   "run": {
-    "timestamp": "2026-09-14T14:31:50",
+    "timestamp": "2026-09-14T14:57:06",
     "device": "cuda",
     "batch_size": 16,
     "gpu_memory_fraction": 0.35,
-    "limit": 200
+    "limit": null
+  },
+  "extra_metrics": {
+    "coarse_map@10": 0.7193,
+    "fine_map@10": 0.3249,
+    "note": "팀 공통 metrics.py 밖에서 임베딩 캐시로 계산한 참고 지표 (compare.py 비교표에는 포함되지 않음). AP@10 = sum_{k<=10, rel_k} P@k / min(갤러리 전체 정답 수, 10) — LookBench 공식 metrics/map.py 정의. 정답 판정은 relevance.py 그대로. SOP는 자기 자신을 검색 결과와 정답 수에서 모두 제외."
   }
 }

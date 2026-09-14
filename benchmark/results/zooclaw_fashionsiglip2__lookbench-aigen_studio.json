@@ -1,0 +1,46 @@
+{
+  "model": "zooclaw_fashionsiglip2",
+  "model_metadata": {
+    "hf_id": "srpone/zooclaw-fashionsiglip2",
+    "revision": "c6b34b2a7b069855c2684979a196a7af61751797",
+    "pooling": "map",
+    "processor": "SiglipImageProcessor"
+  },
+  "embed_dim": 768,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "aigen_studio",
+  "n_queries": 193,
+  "n_gallery": 59254,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "coarse_recall@1": 0.9016,
+    "coarse_recall@10": 0.9845,
+    "fine_recall@1": 0.3679,
+    "fine_recall@10": 0.6477
+  },
+  "run": {
+    "timestamp": "2026-09-14T14:59:29",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  },
+  "extra_metrics": {
+    "coarse_map@10": 0.7013,
+    "fine_map@10": 0.311,
+    "note": "팀 공통 metrics.py 밖에서 임베딩 캐시로 계산한 참고 지표 (compare.py 비교표에는 포함되지 않음). AP@10 = sum_{k<=10, rel_k} P@k / min(갤러리 전체 정답 수, 10) — LookBench 공식 metrics/map.py 정의. 정답 판정은 relevance.py 그대로. SOP는 자기 자신을 검색 결과와 정답 수에서 모두 제외."
+  }
+}
