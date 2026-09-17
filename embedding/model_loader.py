@@ -7,6 +7,7 @@ from .base import ImageEmbeddingModel
 _REGISTRY = {
     "dreamsim": ("dreamsim", "DreamSim"),
     "dinov3": ("dinov3", "DinoV3"),
+    "isoclip": ("isoclip", "IsoClip")
 }
 
 

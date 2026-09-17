@@ -1,12 +1,21 @@
 {
   "data": {
-    "image_folder": "./data/cropped_images",
+    "image_folder": "./data/cropped_images", 
     "output_dir": "results"
   },
   "models": {
     "dreamsim": {
       "batch_size": 32,
       "cache_dir": "./model_cache/dreamsim"
+    },
+    "isoclip": {
+      "batch_size": 64,
+      "isoclip_root": "./IsoCLIP",
+      "clip_model_name": "ViT-B/16",
+      "open_clip_pretrained": null,
+      "iso_ktop": 200,
+      "iso_kbottom": 50,
+      "cache_dir": "./model_cache/isoclip"
     }
   }
 }
