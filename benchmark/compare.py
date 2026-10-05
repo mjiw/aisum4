@@ -63,11 +63,91 @@ def _subset_key(name):
     return (SUBSET_ORDER.index(name) if name in SUBSET_ORDER else len(SUBSET_ORDER), name)
 
 
+def load_speed():
+    """results/speed/*.json -> {(model, dataset): 결과}."""
+    out = {}
+    for path in sorted((RESULTS_DIR / "speed").glob("*.json")):
+        with open(path, encoding="utf-8") as f:
+            d = json.load(f)
+        out[(d["model"], d["dataset"])] = d
+    return out
+
+
+def print_speed(baseline: str):
+    """1,000장당 초와, baseline 모델을 1로 둔 상대 시간.
+
+    배치 크기·dtype·GPU가 같은 결과끼리만 비교가 성립하므로 다르면 경고한다.
+    """
+    speed = load_speed()
+    if not speed:
+        print(f"\n속도 결과가 없습니다: {RESULTS_DIR / 'speed'}"
+              " (python -m benchmark.speed 로 측정)")
+        return
+
+    datasets = sorted({ds for _, ds in speed})
+    models = sorted({m for m, _ in speed})
+    if baseline not in models:
+        print(f"\n기준 모델 '{baseline}'의 속도 결과가 없습니다 (있는 모델: {models})")
+        return
+
+    header = ["dataset", "model", "dim", "images", "e2e s/1k", "fwd s/1k",
+              f"e2e ({baseline}=1)", f"fwd ({baseline}=1)", "peak VRAM"]
+    table, ratios = [], {}
+    for ds in datasets:
+        base = speed.get((baseline, ds))
+        for model in models:
+            r = speed.get((model, ds))
+            if r is None:
+                continue
+            e2e_ratio = fwd_ratio = "-"
+            if base:
+                e2e_ratio = f"{r['e2e_s_per_1000'] / base['e2e_s_per_1000']:.3f}"
+                fwd_ratio = f"{r['fwd_s_per_1000'] / base['fwd_s_per_1000']:.3f}"
+                ratios.setdefault(model, []).append(
+                    (r["e2e_s_per_1000"] / base["e2e_s_per_1000"],
+                     r["fwd_s_per_1000"] / base["fwd_s_per_1000"]))
+            table.append([
+                ds, model, str(r.get("embed_dim", "?")), f"{r['n_images']:,}",
+                f"{r['e2e_s_per_1000']:.3f}", f"{r['fwd_s_per_1000']:.3f}",
+                e2e_ratio, fwd_ratio, f"{r['peak_vram_gb']:.2f}GB",
+            ])
+
+    print(f"\n=== 임베딩 속도 (1,000장당 초, {baseline} = 1) ===")
+    _print_table(header, table)
+
+    if len(datasets) > 1:
+        print("\n  [데이터셋 평균]")
+        avg = []
+        for model in models:
+            rs = ratios.get(model, [])
+            if not rs:
+                continue
+            e2e = sum(x for x, _ in rs) / len(rs)
+            fwd = sum(y for _, y in rs) / len(rs)
+            avg.append([model, str(len(rs)), f"{e2e:.3f}", f"{fwd:.3f}"])
+        _print_table(["model", "datasets", f"e2e ({baseline}=1)",
+                      f"fwd ({baseline}=1)"], avg)
+
+    # 조건이 다른 결과를 섞으면 비율이 의미를 잃는다
+    for field in ("batch_size", "dtype", "gpu"):
+        vals = {str(r["run"].get(field)) for r in speed.values()}
+        if len(vals) > 1:
+            print(f"  ⚠ {field}가 결과마다 다릅니다: {sorted(vals)} — 비율 비교가 공정하지 않습니다")
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--dataset", choices=["lookbench", "sop"], default=None)
     p.add_argument("--csv", default=None, help="CSV로도 저장")
+    p.add_argument("--speed", action="store_true",
+                   help="정확도 표 대신 임베딩 속도 비교표를 출력")
+    p.add_argument("--baseline", default="dreamsim",
+                   help="속도 비율의 기준 모델 (이 모델을 1로 둔다)")
     args = p.parse_args()
+
+    if args.speed:
+        print_speed(args.baseline)
+        return
 
     rows = load_results(args.dataset)
     if not rows:
