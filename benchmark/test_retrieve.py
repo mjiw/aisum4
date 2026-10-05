@@ -56,3 +56,19 @@ def test_topk_clamped_to_gallery_size():
     vecs = unit(np.eye(3))
     idx, _ = search(vecs, vecs, topk=100, exclude_self=True)
     assert idx.shape == (3, 2)               # 자기 제외하면 최대 2개
+
+
+def test_torch_and_numpy_backends_agree():
+    """torch 경로와 numpy 경로가 같은 결과를 내야 한다.
+
+    torch로 바꾼 이유는 성능이 아니라 크래시 회피이므로, 결과가 달라지면 안 된다.
+    """
+    from benchmark.retrieve import _clamp, _search_numpy, _search_torch
+    rng = np.random.default_rng(0)
+    v = unit(rng.normal(size=(200, 32)).astype(np.float32))
+    for exclude in (False, True):
+        topk, fetch = _clamp(5, v.shape[0], exclude)
+        a = _search_numpy(v, v, topk, fetch, 64, exclude)
+        b = _search_torch(v, v, topk, fetch, 64, exclude)
+        np.testing.assert_array_equal(a[0], b[0])
+        np.testing.assert_allclose(a[1], b[1], atol=1e-6)

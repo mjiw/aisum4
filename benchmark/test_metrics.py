@@ -80,8 +80,9 @@ def index():
 def test_perfect_ranking(index):
     got = evaluate([QUERY], np.array([[0, 1, 2, 3, 4]]), index, [1, 10],
                    ["coarse", "fine"], progress=False)
-    assert got == {"coarse_recall@1": 1.0, "coarse_recall@10": 1.0,
-                   "fine_recall@1": 1.0, "fine_recall@10": 1.0}
+    assert got["coarse_recall@1"] == got["coarse_recall@10"] == 1.0
+    assert got["fine_recall@1"] == got["fine_recall@10"] == 1.0
+    assert got["fine_map@10"] == pytest.approx(1.0)   # 정답 2개가 1,2위
 
 
 def test_worst_ranking(index):
@@ -94,7 +95,7 @@ def test_worst_ranking(index):
 
 def test_only_requested_criteria_are_returned(index):
     got = evaluate([QUERY], np.array([[0, 1]]), index, [1], ["exact"], progress=False)
-    assert set(got) == {"exact_recall@1"}
+    assert set(got) == {"exact_recall@1", "exact_map@1"}   # 요청한 기준만
 
 
 def test_rejects_unknown_criterion(index):
@@ -114,3 +115,64 @@ def test_averages_over_queries(index):
     got = evaluate([QUERY, q2], np.array([[0, 1], [0, 1]]), index, [1],
                    ["exact"], progress=False)
     assert got["exact_recall@1"] == 0.5
+
+
+# --- MAP@K ---
+# AP@K = sum_i [ rel(i) * (i위까지 정답 개수 / i) ] / min(R, K)
+
+def test_map_perfect_ranking_is_one(index):
+    """정답이 top에 몰려 있으면 AP=1. GALLERY에서 fine 정답은 A,B 2개."""
+    got = evaluate([QUERY], np.array([[0, 1, 2, 3, 4]]), index, [5], ["fine"],
+                   progress=False)
+    # 1위 정답(1/1), 2위 정답(2/2) -> (1.0 + 1.0) / min(2,5) = 1.0
+    assert got["fine_map@5"] == pytest.approx(1.0)
+
+
+def test_map_penalizes_low_ranking():
+    """Recall은 같아도 정답이 아래에 있으면 MAP이 낮아야 한다."""
+    idx = RelevanceIndex(GALLERY)
+    top = evaluate([QUERY], np.array([[0, 1, 4, 3, 2]]), idx, [5], ["fine"], progress=False)
+    bot = evaluate([QUERY], np.array([[4, 3, 2, 0, 1]]), idx, [5], ["fine"], progress=False)
+    assert top["fine_recall@5"] == bot["fine_recall@5"] == 1.0   # Recall은 동일
+    assert top["fine_map@5"] > bot["fine_map@5"]                 # MAP은 갈림
+    # 아래 배치: 4위 정답(1/4), 5위 정답(2/5) -> (0.25 + 0.4) / 2 = 0.325
+    assert bot["fine_map@5"] == pytest.approx(0.325)
+
+
+def test_map_single_hit_at_first(index):
+    """정답 2개 중 1위 하나만 맞힌 경우: (1/1) / min(2,5) = 0.5"""
+    got = evaluate([QUERY], np.array([[0, 4, 3, 2, 1]]), index, [2], ["fine"],
+                   progress=False)
+    assert got["fine_map@2"] == pytest.approx(0.5)
+
+
+def test_map_zero_when_no_hit(index):
+    got = evaluate([QUERY], np.array([[4, 3]]), index, [2], ["fine"], progress=False)
+    assert got["fine_map@2"] == 0.0
+
+
+def test_map_denominator_is_min_r_and_k(index):
+    """R > K면 분모가 K가 되어, top-K를 정답으로 채우면 만점이 나와야 한다.
+
+    coarse 정답은 4개(A,B,C,D). K=2로 자르면 분모 min(4,2)=2.
+    """
+    got = evaluate([QUERY], np.array([[0, 1, 2, 3]]), index, [2], ["coarse"],
+                   progress=False)
+    assert got["coarse_map@2"] == pytest.approx(1.0)
+
+
+def test_n_relevant_counts_full_gallery(index):
+    assert index.n_relevant(QUERY, "exact") == 1     # A
+    assert index.n_relevant(QUERY, "coarse") == 4    # A,B,C,D (dress)
+    assert index.n_relevant(QUERY, "fine") == 2      # A,B
+    unknown = {"item_id": "ZZ", "category": "hat", "attrs": []}
+    assert index.n_relevant(unknown, "coarse") == 0
+
+
+def test_map_averages_over_queries(index):
+    """쿼리 2개: 하나는 1위 적중, 하나는 전혀 못 맞힘 -> 평균."""
+    q2 = {"item_id": "E", "category": "shoes", "attrs": ["floral", "long"]}
+    got = evaluate([QUERY, q2], np.array([[0, 1], [0, 1]]), index, [1],
+                   ["exact"], progress=False)
+    # QUERY는 1위가 A로 적중 -> AP=1/min(1,1)=1.0 / q2는 못 맞힘 -> 0
+    assert got["exact_map@1"] == pytest.approx(0.5)

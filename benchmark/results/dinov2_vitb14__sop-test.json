@@ -25,10 +25,12 @@
   ],
   "metrics": {
     "exact_recall@1": 0.55,
-    "exact_recall@10": 0.7109
+    "exact_recall@10": 0.7109,
+    "exact_map@1": 0.55,
+    "exact_map@10": 0.2354
   },
   "run": {
-    "timestamp": "2026-09-10T14:42:54",
+    "timestamp": "2026-09-14T14:23:07",
     "device": "cpu",
     "batch_size": 16,
     "gpu_memory_fraction": 0.35,

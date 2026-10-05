@@ -51,7 +51,12 @@ def _metrics_of(rows):
         for m in r["metrics"]:
             if m not in seen:
                 seen.append(m)
-    return sorted(seen, key=lambda m: (m.split("@")[0], int(m.split("@")[1])))
+    # recall 먼저, 그다음 map. 각각 K 오름차순.
+    def order(m):
+        crit, rest = m.split("_", 1)
+        kind, k = rest.split("@")
+        return (crit, 0 if kind == "recall" else 1, int(k))
+    return sorted(seen, key=order)
 
 
 def _subset_key(name):

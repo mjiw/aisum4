@@ -27,11 +27,15 @@
   "metrics": {
     "coarse_recall@1": 0.4938,
     "coarse_recall@10": 0.8063,
+    "coarse_map@1": 0.4938,
+    "coarse_map@10": 0.2704,
     "fine_recall@1": 0.1938,
-    "fine_recall@10": 0.35
+    "fine_recall@10": 0.35,
+    "fine_map@1": 0.1938,
+    "fine_map@10": 0.1403
   },
   "run": {
-    "timestamp": "2026-09-10T14:42:23",
+    "timestamp": "2026-09-14T14:22:22",
     "device": "cpu",
     "batch_size": 16,
     "gpu_memory_fraction": 0.35,

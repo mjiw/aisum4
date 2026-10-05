@@ -42,6 +42,11 @@ class RelevanceIndex:
             self.cat_ids[row] = self._cat_to_id.setdefault(
                 meta["category"], len(self._cat_to_id))
 
+        # MAP@K의 분모 min(R, K)에 쓸 R(갤러리 전체 정답 개수).
+        # exact/coarse는 개수만 세면 되므로 미리 집계해 둔다.
+        self._item_counts = np.bincount(self.item_ids, minlength=len(self._item_to_id))
+        self._cat_counts = np.bincount(self.cat_ids, minlength=len(self._cat_to_id))
+
         vocab = sorted({a for m in gallery_metas for a in m["attrs"]})
         self._attr_to_id = {a: i for i, a in enumerate(vocab)}
         self.attr_mat = np.zeros((self.size, len(vocab)), dtype=np.float32)
@@ -85,3 +90,19 @@ class RelevanceIndex:
     def judge(self, query_meta: dict) -> dict:
         """갤러리 전체 판정. 길이 N 배열. (작은 데이터셋 확인과 테스트용)"""
         return self._judge_rows(query_meta, slice(None))
+
+    def n_relevant(self, query_meta: dict, criterion: str) -> int:
+        """갤러리 전체에서 이 쿼리의 정답 개수 R. MAP@K의 분모 min(R, K)에 쓴다.
+
+        exact/coarse는 미리 센 값을 바로 읽는다. fine은 속성 조합이 쿼리마다
+        달라 전체 판정이 필요하지만, 행렬곱 한 번이라 부담이 크지 않다.
+        """
+        if criterion == "exact":
+            i = self._item_to_id.get(query_meta["item_id"], -1)
+            return int(self._item_counts[i]) if i >= 0 else 0
+        if criterion == "coarse":
+            c = self._cat_to_id.get(query_meta["category"], -1)
+            return int(self._cat_counts[c]) if c >= 0 else 0
+        if criterion == "fine":
+            return int(self._judge_rows(query_meta, slice(None))["fine"].sum())
+        raise ValueError(f"알 수 없는 판정 기준: {criterion}")
