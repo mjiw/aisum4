@@ -1,0 +1,55 @@
+{
+  "model": "openvision2_vitl14",
+  "model_metadata": {
+    "hf_id": "UCSC-VLAA/openvision2-vit-large-patch14-224-vision-only",
+    "revision": "14fe0b85f4e68b19b6e46405cdac58284cddabe0",
+    "pooling": "avg (open_clip pooled)",
+    "preprocess": {
+      "size": 224,
+      "mean": [
+        0.48145466,
+        0.4578275,
+        0.40821073
+      ],
+      "std": [
+        0.26862954,
+        0.26130258,
+        0.27577711
+      ],
+      "interpolation": "bicubic",
+      "resize_mode": "shortest"
+    }
+  },
+  "embed_dim": 1024,
+  "dataset_name": "sop",
+  "dataset": "nyris/stanford-online-products-v1",
+  "dataset_revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+  "dataset_version": null,
+  "config": "test",
+  "n_queries": 60502,
+  "n_gallery": 60502,
+  "noise_pool": false,
+  "exclude_self": true,
+  "fine_mode": "exact",
+  "criteria": [
+    "exact"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "exact_recall@1": 0.6543,
+    "exact_recall@10": 0.7993,
+    "exact_map@1": 0.6543,
+    "exact_map@10": 0.319
+  },
+  "run": {
+    "timestamp": "2026-10-05T23:52:42",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "throttle": 0.5,
+    "limit": null
+  }
+}

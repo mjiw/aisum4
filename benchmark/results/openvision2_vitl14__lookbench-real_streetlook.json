@@ -1,0 +1,60 @@
+{
+  "model": "openvision2_vitl14",
+  "model_metadata": {
+    "hf_id": "UCSC-VLAA/openvision2-vit-large-patch14-224-vision-only",
+    "revision": "14fe0b85f4e68b19b6e46405cdac58284cddabe0",
+    "pooling": "avg (open_clip pooled)",
+    "preprocess": {
+      "size": 224,
+      "mean": [
+        0.48145466,
+        0.4578275,
+        0.40821073
+      ],
+      "std": [
+        0.26862954,
+        0.26130258,
+        0.27577711
+      ],
+      "interpolation": "bicubic",
+      "resize_mode": "shortest"
+    }
+  },
+  "embed_dim": 1024,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "real_streetlook",
+  "n_queries": 981,
+  "n_gallery": 61553,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "coarse_recall@1": 0.6381,
+    "coarse_recall@10": 0.8532,
+    "coarse_map@1": 0.6381,
+    "coarse_map@10": 0.3647,
+    "fine_recall@1": 0.2243,
+    "fine_recall@10": 0.4098,
+    "fine_map@1": 0.2243,
+    "fine_map@10": 0.1651
+  },
+  "run": {
+    "timestamp": "2026-10-05T23:39:26",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "throttle": 0.5,
+    "limit": null
+  }
+}

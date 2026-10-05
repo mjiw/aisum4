@@ -1,0 +1,37 @@
+{
+  "model": "dreamsim",
+  "model_metadata": {
+    "dreamsim_type": "ensemble"
+  },
+  "dataset": "lookbench",
+  "n_images": 3000,
+  "embed_dim": 1792,
+  "e2e_s": 18.744402232812718,
+  "fwd_s": 14.006503712618724,
+  "e2e_s_per_1000": 6.248134077604239,
+  "fwd_s_per_1000": 4.668834570872908,
+  "e2e_runs": [
+    18.786131442291662,
+    18.744402232812718,
+    18.73130617919378
+  ],
+  "fwd_runs": [
+    13.987156933639199,
+    14.006503712618724,
+    14.036405623424798
+  ],
+  "peak_vram_gb": 2.891179084777832,
+  "run": {
+    "device": "cuda",
+    "batch_size": 16,
+    "runs": 3,
+    "dtype": "fp32",
+    "sample": 3000,
+    "seed": 0,
+    "rest_ratio": 1.0,
+    "gpu": "NVIDIA RTX PRO 5000 Blackwell",
+    "torch": "2.11.0+cu128",
+    "gpu_memory_fraction": 0.35,
+    "timestamp": "2026-10-05T23:59:42"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "model": "openvision2_vitl14",
+  "model_metadata": {
+    "hf_id": "UCSC-VLAA/openvision2-vit-large-patch14-224-vision-only",
+    "revision": "14fe0b85f4e68b19b6e46405cdac58284cddabe0",
+    "pooling": "avg (open_clip pooled)",
+    "preprocess": {
+      "size": 224,
+      "mean": [
+        0.48145466,
+        0.4578275,
+        0.40821073
+      ],
+      "std": [
+        0.26862954,
+        0.26130258,
+        0.27577711
+      ],
+      "interpolation": "bicubic",
+      "resize_mode": "shortest"
+    }
+  },
+  "dataset": "sop_test",
+  "n_images": 3000,
+  "embed_dim": 1024,
+  "e2e_s": 21.663558557396755,
+  "fwd_s": 16.62672196375206,
+  "e2e_s_per_1000": 7.221186185798918,
+  "fwd_s_per_1000": 5.54224065458402,
+  "e2e_runs": [
+    21.658562055788934,
+    21.693045782623813,
+    21.663558557396755
+  ],
+  "fwd_runs": [
+    16.62543498305604,
+    16.683735080994666,
+    16.62672196375206
+  ],
+  "peak_vram_gb": 3.022289276123047,
+  "run": {
+    "device": "cuda",
+    "batch_size": 16,
+    "runs": 3,
+    "dtype": "fp32",
+    "sample": 3000,
+    "seed": 0,
+    "rest_ratio": 1.0,
+    "gpu": "NVIDIA RTX PRO 5000 Blackwell",
+    "torch": "2.11.0+cu128",
+    "gpu_memory_fraction": 0.35,
+    "timestamp": "2026-10-06T00:03:49"
+  }
+}
