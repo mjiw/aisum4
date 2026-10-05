@@ -1,6 +1,6 @@
 # DreamSim SynCLR ViT-B/16 평가 기록
 
-담당: yeooonsu / 브랜치: `test/dreamsim-synclr` (`test/dino-v2`의 `8314c0f`에서 분기)
+담당: yeooonsu / 브랜치: `test/dreamsim-synclr-b16` (`test/dino-v2`의 `8314c0f`에서 분기)
 평가 실행·속도 측정·문서 작성: 2026-10-05
 
 ## 1. 모델
@@ -193,8 +193,8 @@ ensemble 기준 forward 시간이 4.093ms와 4.094ms로 거의 같아서, **forw
 ## 7. 알려진 이슈
 
 1. **ensemble·dinov2_vitb14·dinov3_vitb16 결과에 mAP@10이 없습니다.** mAP는
-   `478992b`에서 추가됐고 그 전에 돌린 결과들입니다. 지시에 따라 이번에 재실행하지
-   않았습니다. 그래서 **mAP 비교는 `dreamsim_dinov2_vitb14`와 이 모델 둘 사이에서만**
+   `478992b`에서 추가됐고 그 전에 돌린 결과들입니다. 이번 실험 범위에서 제외해
+   재실행하지 않았습니다. 그래서 **mAP 비교는 `dreamsim_dinov2_vitb14`와 이 모델 둘 사이에서만**
    가능합니다.
 2. **ensemble 결과의 `device`가 섞여 있습니다**(cuda 2건, cpu 2건, SOP cuda). 지표 비교에는
    영향이 없습니다.
@@ -210,7 +210,8 @@ ensemble 기준 forward 시간이 4.093ms와 4.094ms로 거의 같아서, **forw
 | 해시 | 내용 |
 |---|---|
 | `0b0c18e` | DreamSim SynCLR ViT-B/16 평가 대상 등록 (config, 레지스트리, README) |
-| (이 문서와 함께) | 평가 결과 JSON 5개, 속도 결과 2개, 이 문서 |
+| `66daccf` | 평가 결과 JSON 5개, 속도 결과 2개 |
+| `1bd2dd7` | 이 문서 |
 
 비교 대상 `dreamsim_dinov2_vitb14` 커밋은 `4258d00`(등록), `b396dad`·`478992b`(결과)입니다.
 
