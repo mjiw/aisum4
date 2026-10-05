@@ -13,6 +13,8 @@ _REGISTRY = {
     "dinov2_vitb14": ("dinov3", "DinoV3"),
     # 현재 파이프라인이 쓰는 모델. 기존 구현을 재사용한다.
     "dreamsim": ("dreamsim", "DreamSim"),
+    # OpenVision 2 (UCSC-VLAA). vision-only 체크포인트라 전용 로더가 필요하다.
+    "openvision2_vitl14": ("openvision2", "OpenVision2"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }

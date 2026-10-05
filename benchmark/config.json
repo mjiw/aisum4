@@ -75,6 +75,13 @@
       "embed_dim": 1792,
       "batch_size": 16,
       "cache_dir": "./model_cache/dreamsim"
+    },
+    "openvision2_vitl14": {
+      "hf_id": "UCSC-VLAA/openvision2-vit-large-patch14-224-vision-only",
+      "embed_dim": 1024,
+      "batch_size": 16,
+      "cache_dir": "./model_cache/openvision2",
+      "revision": "14fe0b85f4e68b19b6e46405cdac58284cddabe0"
     }
   }
 }

@@ -10,6 +10,7 @@ metric을 고치고 다시 돌릴 때는 이 단계를 건너뛴다(run_eval --s
 
 import json
 import shutil
+import time
 from pathlib import Path
 
 import numpy as np
@@ -89,16 +90,24 @@ def _save_part(part_dir, index, vectors, metas):
 
 
 def encode_split(model, ds, to_record, batch_size, desc, part_dir=None,
-                 checkpoint_every=4096, start=0, part_index=0):
-    """(N, D) float32 임베딩과 길이 N의 메타 리스트. 순서는 ds와 같다."""
+                 checkpoint_every=4096, start=0, part_index=0, throttle=0.0):
+    """(N, D) float32 임베딩과 길이 N의 메타 리스트. 순서는 ds와 같다.
+
+    throttle: 배치 처리시간 대비 쉬는 비율. 0이면 쉬지 않는다(기본).
+        이 머신은 GPU를 오래 100%로 붙이면 드라이버가 죽은 이력이 있어,
+        긴 인코딩에서는 1.0 정도를 줘 사용률을 절반쯤으로 낮춘다.
+    """
     vectors, metas = [], []
     pending_vecs, pending_metas = [], []
     buffer = []
 
     def flush_batch():
         if buffer:
+            started = time.perf_counter()
             pending_vecs.append(model.embed(buffer))
             buffer.clear()
+            if throttle:
+                time.sleep((time.perf_counter() - started) * throttle)
 
     def checkpoint():
         nonlocal part_index
@@ -136,7 +145,7 @@ def encode_split(model, ds, to_record, batch_size, desc, part_dir=None,
 
 
 def encode_or_load(model, ds, to_record, batch_size, cache_dir, config, split,
-                   force=False, checkpoint_every=4096):
+                   force=False, checkpoint_every=4096, throttle=0.0):
     """캐시가 있으면 읽고, 없으면 인코딩해서 저장한다. 중단된 작업은 이어서 한다."""
     vec_path, meta_path = cache_paths(cache_dir, model.name, config, split)
     part_dir = _part_dir(cache_dir, model.name, config, split)
@@ -174,7 +183,7 @@ def encode_or_load(model, ds, to_record, batch_size, cache_dir, config, split,
     new_vecs, new_metas = encode_split(
         model, ds, to_record, batch_size, f"{config}/{split}",
         part_dir=part_dir, checkpoint_every=checkpoint_every,
-        start=start, part_index=len(done_vecs),
+        start=start, part_index=len(done_vecs), throttle=throttle,
     )
 
     vectors = np.concatenate(done_vecs + [new_vecs], axis=0) if done_vecs else new_vecs

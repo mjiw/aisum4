@@ -34,6 +34,9 @@ def parse_args():
     p.add_argument("--batch-size", type=int, default=None, help="config 값을 덮어씀")
     p.add_argument("--gpu-mem-fraction", type=float, default=None,
                    help="VRAM 사용 상한 비율. 이 머신은 드라이버 크래시 이력이 있어 여유를 남긴다")
+    p.add_argument("--throttle", type=float, default=0.0,
+                   help="배치 처리시간 대비 쉬는 비율. 1.0이면 GPU 사용률이 대략 절반이 된다 "
+                        "(드라이버 크래시 예방용. 기본 0 = 쉬지 않음)")
     p.add_argument("--no-gpu-lock", action="store_true",
                    help="GPU 직렬화 락을 건너뛴다 (동시 실행은 크래시 위험이 있으니 비권장)")
     return p.parse_args()
@@ -117,6 +120,7 @@ def _run(args):
             data_cfg["embed_cache_dir"], key, split,
             force=args.force_encode,
             checkpoint_every=eval_cfg.get("checkpoint_every", 4096),
+            throttle=args.throttle,
         )
 
     exclude_self = bool(ds_cfg.get("exclude_self"))
@@ -177,6 +181,7 @@ def _run(args):
             "device": model_device,
             "batch_size": batch_size,
             "gpu_memory_fraction": frac,
+            "throttle": args.throttle,
             "limit": args.limit,
         },
     }
