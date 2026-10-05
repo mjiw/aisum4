@@ -87,6 +87,12 @@
       "embed_dim": 768,
       "batch_size": 16,
       "cache_dir": "./model_cache/dreamsim"
+    },
+    "dreamsim_synclr_vitb16": {
+      "dreamsim_type": "synclr_vitb16",
+      "embed_dim": 768,
+      "batch_size": 16,
+      "cache_dir": "./model_cache/dreamsim"
     }
   }
 }

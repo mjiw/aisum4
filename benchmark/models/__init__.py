@@ -17,6 +17,9 @@ _REGISTRY = {
     # 가중치라 위의 "dinov2_vitb14"(facebook/dinov2-base)와는 다른 모델이다.
     # 래퍼는 같고 config의 dreamsim_type만 다르다.
     "dreamsim_dinov2_vitb14": ("dreamsim", "DreamSim"),
+    # DreamSim single-branch, SynCLR ViT-B/16 백본. SynCLR은 합성 이미지·캡션만으로
+    # 학습한 백본이라 실사 데이터로 학습한 DINOv2 variant와 대조된다. 래퍼는 같다.
+    "dreamsim_synclr_vitb16": ("dreamsim", "DreamSim"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }
