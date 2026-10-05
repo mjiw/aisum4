@@ -1,0 +1,35 @@
+{
+  "dataset": "lookbench",
+  "baseline": "dreamsim",
+  "batch_size": 16,
+  "n_images": 3200,
+  "n_forward_images": 3200,
+  "dataset_total": 69399,
+  "seed": 0,
+  "warmup_batches": 10,
+  "repeats": 3,
+  "dtype": "fp32",
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "torch": "2.14.0+cu130",
+  "timestamp": "2026-10-05T20:17:01",
+  "models": {
+    "dreamsim": {
+      "preprocess_ms_per_img": 1.4310768124960305,
+      "forward_ms_per_img": 4.0943068749948,
+      "total_ms_per_img": 5.52538368749083,
+      "forward_img_per_s": 244.24158484731805,
+      "total_img_per_s": 180.98290662853802,
+      "forward_speedup": 1.0,
+      "total_speedup": 1.0
+    },
+    "dreamsim_synclr_vitb16": {
+      "preprocess_ms_per_img": 1.4206978437505313,
+      "forward_ms_per_img": 1.3664916874949995,
+      "total_ms_per_img": 2.787189531245531,
+      "forward_img_per_s": 731.8010121475103,
+      "total_img_per_s": 358.7843556348043,
+      "forward_speedup": 2.996217915163704,
+      "total_speedup": 1.9824212259514562
+    }
+  }
+}

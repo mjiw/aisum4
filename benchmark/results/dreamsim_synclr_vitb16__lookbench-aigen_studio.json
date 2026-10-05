@@ -1,0 +1,43 @@
+{
+  "model": "dreamsim_synclr_vitb16",
+  "model_metadata": {
+    "dreamsim_type": "synclr_vitb16"
+  },
+  "embed_dim": 768,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "aigen_studio",
+  "n_queries": 193,
+  "n_gallery": 59254,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "map_k_values": [
+    10
+  ],
+  "metrics": {
+    "coarse_recall@1": 0.5285,
+    "coarse_recall@10": 0.7306,
+    "fine_recall@1": 0.2228,
+    "fine_recall@10": 0.4093,
+    "coarse_map@10": 0.2622,
+    "fine_map@10": 0.1338
+  },
+  "run": {
+    "timestamp": "2026-10-05T20:10:52",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}
