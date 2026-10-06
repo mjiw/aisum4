@@ -64,7 +64,7 @@ def _run(args):
     from benchmark.data import lookbench, sop
     from benchmark.hf_auth import ensure_login
     from benchmark.encode import encode_or_load
-    from benchmark.metrics import evaluate
+    from benchmark.metrics import MAP_DENOMINATOR, evaluate
     from benchmark.models import create_model
     from benchmark.relevance import RelevanceIndex
     from benchmark.retrieve import search
@@ -152,8 +152,10 @@ def _run(args):
                         exclude_self=exclude_self)
 
     criteria = ds_cfg["criteria"]
+    metric_types = ds_cfg.get("metrics", ["recall"])
     rel_index = RelevanceIndex(gallery_metas, fine_mode=ds_cfg["fine_mode"])
-    scores = evaluate(query_metas, top_idx, rel_index, k_values, criteria)
+    scores = evaluate(query_metas, top_idx, rel_index, k_values, criteria,
+                      metric_types=metric_types, exclude_self=exclude_self)
 
     result = {
         "model": args.model,
@@ -170,6 +172,8 @@ def _run(args):
         "exclude_self": exclude_self,
         "fine_mode": ds_cfg["fine_mode"],
         "criteria": criteria,
+        "metric_types": metric_types,
+        "map_denominator": MAP_DENOMINATOR if "map" in metric_types else None,
         "k_values": k_values,
         "metrics": scores,
         "run": {

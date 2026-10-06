@@ -26,6 +26,8 @@ def load_results(dataset=None):
     for path in sorted(RESULTS_DIR.glob("*.json")):
         with open(path, encoding="utf-8") as f:
             d = json.load(f)
+        if "metrics" not in d:
+            continue          # speed.json 등 평가 결과가 아닌 파일
         if dataset and d.get("dataset_name") != dataset:
             continue
         if d.get("run", {}).get("limit"):

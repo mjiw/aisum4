@@ -50,6 +50,8 @@ class RelevanceIndex:
                 self.attr_mat[row, self._attr_to_id[attr]] = 1.0
         self.attr_cnt = self.attr_mat.sum(axis=1)
 
+        self._total_cache = {}      # total_relevant()용. 쿼리 서명 -> 기준별 정답 수
+
     def _judge_rows(self, query_meta: dict, rows) -> dict:
         cat_id = self._cat_to_id.get(query_meta["category"], -1)
         item_id = self._item_to_id.get(query_meta["item_id"], -1)
@@ -77,6 +79,25 @@ class RelevanceIndex:
             fine = same_cat & (inter == q_cnt)
 
         return {"exact": exact, "coarse": same_cat, "fine": fine}
+
+    def total_relevant(self, query_meta: dict) -> dict:
+        """갤러리 전체의 정답 개수. MAP@K의 분모(min(R, K))에 쓴다.
+
+        판정은 _judge_rows를 그대로 재사용한다. 따로 세는 지름길을 만들면
+        vocab에 없는 속성이나 미등록 카테고리 처리가 judge()와 어긋날 수 있다.
+
+        (item_id, category, attrs)가 같은 쿼리는 결과가 같으므로 캐시한다.
+        SOP는 쿼리 60,502개에 고유 서명이 11,318개뿐이라 이 캐시가 없으면
+        갤러리 전체 판정을 6만 번 돌게 된다.
+        """
+        key = (query_meta["item_id"], query_meta["category"],
+               tuple(query_meta["attrs"]))
+        cached = self._total_cache.get(key)
+        if cached is None:
+            judged = self._judge_rows(query_meta, slice(None))
+            cached = {c: int(judged[c].sum()) for c in CRITERIA}
+            self._total_cache[key] = cached
+        return cached
 
     def judge_at(self, query_meta: dict, rows) -> dict:
         """검색된 top-K 위치에서만 판정한다. 각 값은 길이 len(rows) 불리언 배열."""

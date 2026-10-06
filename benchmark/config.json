@@ -27,6 +27,10 @@
       "criteria": [
         "coarse",
         "fine"
+      ],
+      "metrics": [
+        "recall",
+        "map"
       ]
     },
     "sop": {
@@ -46,6 +50,10 @@
       "exclude_self": true,
       "criteria": [
         "exact"
+      ],
+      "metrics": [
+        "recall",
+        "map"
       ]
     }
   },

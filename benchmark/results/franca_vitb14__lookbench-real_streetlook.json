@@ -24,18 +24,27 @@
     "coarse",
     "fine"
   ],
+  "metric_types": [
+    "recall",
+    "map"
+  ],
+  "map_denominator": "min(R,K)",
   "k_values": [
     1,
     10
   ],
   "metrics": {
     "coarse_recall@1": 0.4771,
+    "coarse_map@1": 0.4771,
     "coarse_recall@10": 0.7452,
+    "coarse_map@10": 0.2247,
     "fine_recall@1": 0.1662,
-    "fine_recall@10": 0.3476
+    "fine_map@1": 0.1662,
+    "fine_recall@10": 0.3476,
+    "fine_map@10": 0.1306
   },
   "run": {
-    "timestamp": "2026-09-11T17:20:14",
+    "timestamp": "2026-09-17T11:30:49",
     "device": "cuda",
     "batch_size": 16,
     "gpu_memory_fraction": 0.35,

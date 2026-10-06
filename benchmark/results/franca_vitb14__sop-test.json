@@ -23,16 +23,23 @@
   "criteria": [
     "exact"
   ],
+  "metric_types": [
+    "recall",
+    "map"
+  ],
+  "map_denominator": "min(R,K)",
   "k_values": [
     1,
     10
   ],
   "metrics": {
     "exact_recall@1": 0.5527,
-    "exact_recall@10": 0.7042
+    "exact_map@1": 0.5527,
+    "exact_recall@10": 0.7042,
+    "exact_map@10": 0.2846
   },
   "run": {
-    "timestamp": "2026-09-11T17:31:58",
+    "timestamp": "2026-09-17T11:31:42",
     "device": "cuda",
     "batch_size": 16,
     "gpu_memory_fraction": 0.35,
