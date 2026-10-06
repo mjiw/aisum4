@@ -94,6 +94,15 @@
       "image_size": 224,
       "batch_size": 16,
       "cache_dir": "./model_cache/franca"
+    },
+    "moda_fashion_crossdomain": {
+      "hf_id": "HopitAI/moda-fashion-crossdomain",
+      "open_clip_arch": "ViT-B-16-SigLIP",
+      "weight_file": "open_clip_model.safetensors",
+      "embed_dim": 768,
+      "batch_size": 16,
+      "cache_dir": "./model_cache/moda",
+      "revision": "acab047ed01de9bcb6d5bf6136f8668c4becf938"
     }
   }
 }

@@ -1,0 +1,61 @@
+{
+  "model": "moda_fashion_crossdomain",
+  "model_metadata": {
+    "hf_id": "HopitAI/moda-fashion-crossdomain",
+    "revision": "acab047ed01de9bcb6d5bf6136f8668c4becf938",
+    "open_clip_arch": "ViT-B-16-SigLIP",
+    "weight_file": "open_clip_model.safetensors",
+    "pooling": "siglip_map_head",
+    "encode_mode": "image_only",
+    "preprocess": {
+      "image_mean": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "image_std": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "image_interpolation": "bicubic",
+      "image_resize_mode": "squash"
+    }
+  },
+  "embed_dim": 768,
+  "dataset_name": "sop",
+  "dataset": "nyris/stanford-online-products-v1",
+  "dataset_revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+  "dataset_version": null,
+  "config": "test",
+  "n_queries": 60502,
+  "n_gallery": 60502,
+  "noise_pool": false,
+  "exclude_self": true,
+  "fine_mode": "exact",
+  "criteria": [
+    "exact"
+  ],
+  "metric_types": [
+    "recall",
+    "map"
+  ],
+  "map_denominator": "min(R,K)",
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "exact_recall@1": 0.691,
+    "exact_map@1": 0.691,
+    "exact_recall@10": 0.8429,
+    "exact_map@10": 0.4511
+  },
+  "run": {
+    "timestamp": "2026-10-01T15:04:20",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

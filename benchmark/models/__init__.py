@@ -15,6 +15,8 @@ _REGISTRY = {
     "dreamsim": ("dreamsim", "DreamSim"),
     # Franca ViT-B/14 (valeoai). HF가 아니라 torch.hub로 배포된다.
     "franca_vitb14": ("franca", "Franca"),
+    # MODA-Fashion (Hopit AI). OpenCLIP ViT-B/16-SigLIP 파인튜닝. 패션 특화.
+    "moda_fashion_crossdomain": ("moda", "ModaFashion"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }

@@ -1,0 +1,66 @@
+{
+  "model": "moda_fashion_crossdomain",
+  "model_metadata": {
+    "hf_id": "HopitAI/moda-fashion-crossdomain",
+    "revision": "acab047ed01de9bcb6d5bf6136f8668c4becf938",
+    "open_clip_arch": "ViT-B-16-SigLIP",
+    "weight_file": "open_clip_model.safetensors",
+    "pooling": "siglip_map_head",
+    "encode_mode": "image_only",
+    "preprocess": {
+      "image_mean": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "image_std": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "image_interpolation": "bicubic",
+      "image_resize_mode": "squash"
+    }
+  },
+  "embed_dim": 768,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "real_studio_flat",
+  "n_queries": 1011,
+  "n_gallery": 62226,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "metric_types": [
+    "recall",
+    "map"
+  ],
+  "map_denominator": "min(R,K)",
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "coarse_recall@1": 0.9169,
+    "coarse_map@1": 0.9169,
+    "coarse_recall@10": 0.9763,
+    "coarse_map@10": 0.7012,
+    "fine_recall@1": 0.4045,
+    "fine_map@1": 0.4045,
+    "fine_recall@10": 0.6667,
+    "fine_map@10": 0.3326
+  },
+  "run": {
+    "timestamp": "2026-10-01T14:58:55",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}
