@@ -94,6 +94,13 @@
       "image_size": 224,
       "batch_size": 16,
       "cache_dir": "./model_cache/franca"
+    },
+    "bge_vl_large": {
+      "hf_id": "BAAI/BGE-VL-large",
+      "embed_dim": 768,
+      "batch_size": 16,
+      "cache_dir": "./model_cache/bge_vl",
+      "revision": "40fb48217f521df22a2a5bf15edd52ed1146ef05"
     }
   }
 }

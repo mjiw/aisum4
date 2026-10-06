@@ -1,0 +1,46 @@
+{
+  "model": "bge_vl_large",
+  "model_metadata": {
+    "hf_id": "BAAI/BGE-VL-large",
+    "revision": "40fb48217f521df22a2a5bf15edd52ed1146ef05",
+    "pooling": "clip_visual_projection",
+    "encode_mode": "image_only",
+    "loaded_as": "transformers.CLIPModel"
+  },
+  "embed_dim": 768,
+  "dataset_name": "sop",
+  "dataset": "nyris/stanford-online-products-v1",
+  "dataset_revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+  "dataset_version": null,
+  "config": "test",
+  "n_queries": 60502,
+  "n_gallery": 60502,
+  "noise_pool": false,
+  "exclude_self": true,
+  "fine_mode": "exact",
+  "criteria": [
+    "exact"
+  ],
+  "metric_types": [
+    "recall",
+    "map"
+  ],
+  "map_denominator": "min(R,K)",
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "exact_recall@1": 0.5762,
+    "exact_map@1": 0.5762,
+    "exact_recall@10": 0.7391,
+    "exact_map@10": 0.3237
+  },
+  "run": {
+    "timestamp": "2026-09-28T00:58:53",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

@@ -15,6 +15,8 @@ _REGISTRY = {
     "dreamsim": ("dreamsim", "DreamSim"),
     # Franca ViT-B/14 (valeoai). HF가 아니라 torch.hub로 배포된다.
     "franca_vitb14": ("franca", "Franca"),
+    # BGE-VL (BAAI). CLIP ViT-L/14 파인튜닝. trust_remote_code 필요.
+    "bge_vl_large": ("bge_vl", "BgeVL"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }

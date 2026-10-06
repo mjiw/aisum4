@@ -1,0 +1,176 @@
+{
+  "baseline": "dreamsim",
+  "gpu": "NVIDIA GeForce RTX 5070 Ti",
+  "gpu_memory_fraction": 0.35,
+  "torch": "2.13.0+cu130",
+  "lookbench_noise_pool": false,
+  "sample_per_source": 512,
+  "repeats": 3,
+  "seed": 0,
+  "timestamp": "2026-10-06T14:19:33",
+  "models": {
+    "bge_vl_large": {
+      "_meta": {
+        "model_metadata": {
+          "hf_id": "BAAI/BGE-VL-large",
+          "revision": "40fb48217f521df22a2a5bf15edd52ed1146ef05",
+          "pooling": "clip_visual_projection",
+          "encode_mode": "image_only",
+          "loaded_as": "transformers.CLIPModel"
+        },
+        "embed_dim": 768,
+        "device": "cuda",
+        "batch_size": 16
+      },
+      "lookbench": {
+        "n_sample": 512,
+        "n_dataset_total": 11124,
+        "seconds_sample_median": 1.7516,
+        "seconds_sample_all": [
+          1.771,
+          1.7516,
+          1.7508
+        ],
+        "images_per_sec": 292.31,
+        "seconds_per_1000": 3.42,
+        "seconds_full_dataset": 38.1,
+        "seconds_preprocess_median": 0.4349,
+        "seconds_forward_median": 1.2941,
+        "peak_vram_mb": 1003.5,
+        "time_ratio_vs_base": 0.454
+      },
+      "sop": {
+        "n_sample": 512,
+        "n_dataset_total": 60502,
+        "seconds_sample_median": 1.7214,
+        "seconds_sample_all": [
+          1.6963,
+          1.7214,
+          1.7425
+        ],
+        "images_per_sec": 297.43,
+        "seconds_per_1000": 3.36,
+        "seconds_full_dataset": 203.4,
+        "seconds_preprocess_median": 0.4089,
+        "seconds_forward_median": 1.2976,
+        "peak_vram_mb": 1003.5,
+        "time_ratio_vs_base": 0.448
+      },
+      "combined": {
+        "n_dataset_total": 71626,
+        "seconds_full_dataset": 241.5,
+        "images_per_sec": 296.59,
+        "seconds_per_1000": 3.37,
+        "time_ratio_vs_base": 0.449
+      }
+    },
+    "franca_vitb14": {
+      "_meta": {
+        "model_metadata": {
+          "hub_repo": "valeoai/Franca:v1.1.0",
+          "hub_entry": "franca_vitb14",
+          "weights": "IN21K_224",
+          "use_rasa_head": false,
+          "pooling": "cls",
+          "image_size": 224,
+          "resize_size": 256
+        },
+        "embed_dim": 768,
+        "device": "cuda",
+        "batch_size": 16
+      },
+      "lookbench": {
+        "n_sample": 512,
+        "n_dataset_total": 11124,
+        "seconds_sample_median": 2.0377,
+        "seconds_sample_all": [
+          2.0377,
+          2.039,
+          1.997
+        ],
+        "images_per_sec": 251.26,
+        "seconds_per_1000": 3.98,
+        "seconds_full_dataset": 44.3,
+        "seconds_preprocess_median": 0.5927,
+        "seconds_forward_median": 1.3713,
+        "peak_vram_mb": 548.0,
+        "time_ratio_vs_base": 0.527
+      },
+      "sop": {
+        "n_sample": 512,
+        "n_dataset_total": 60502,
+        "seconds_sample_median": 1.9997,
+        "seconds_sample_all": [
+          2.025,
+          1.9997,
+          1.9536
+        ],
+        "images_per_sec": 256.03,
+        "seconds_per_1000": 3.91,
+        "seconds_full_dataset": 236.3,
+        "seconds_preprocess_median": 0.5974,
+        "seconds_forward_median": 1.3614,
+        "peak_vram_mb": 548.0,
+        "time_ratio_vs_base": 0.521
+      },
+      "combined": {
+        "n_dataset_total": 71626,
+        "seconds_full_dataset": 280.6,
+        "images_per_sec": 255.26,
+        "seconds_per_1000": 3.92,
+        "time_ratio_vs_base": 0.522
+      }
+    },
+    "dreamsim": {
+      "_meta": {
+        "model_metadata": {
+          "dreamsim_type": "ensemble"
+        },
+        "embed_dim": 1792,
+        "device": "cuda",
+        "batch_size": 16
+      },
+      "lookbench": {
+        "n_sample": 512,
+        "n_dataset_total": 11124,
+        "seconds_sample_median": 3.8642,
+        "seconds_sample_all": [
+          3.8806,
+          3.8523,
+          3.8642
+        ],
+        "images_per_sec": 132.5,
+        "seconds_per_1000": 7.55,
+        "seconds_full_dataset": 84.0,
+        "seconds_preprocess_median": 0.497,
+        "seconds_forward_median": 3.3103,
+        "peak_vram_mb": 1269.2,
+        "time_ratio_vs_base": 1.0
+      },
+      "sop": {
+        "n_sample": 512,
+        "n_dataset_total": 60502,
+        "seconds_sample_median": 3.8412,
+        "seconds_sample_all": [
+          3.8412,
+          3.811,
+          3.8495
+        ],
+        "images_per_sec": 133.29,
+        "seconds_per_1000": 7.5,
+        "seconds_full_dataset": 453.9,
+        "seconds_preprocess_median": 0.4902,
+        "seconds_forward_median": 3.3055,
+        "peak_vram_mb": 1269.2,
+        "time_ratio_vs_base": 1.0
+      },
+      "combined": {
+        "n_dataset_total": 71626,
+        "seconds_full_dataset": 537.9,
+        "images_per_sec": 133.16,
+        "seconds_per_1000": 7.51,
+        "time_ratio_vs_base": 1.0
+      }
+    }
+  }
+}
