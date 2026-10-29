@@ -1,7 +1,7 @@
 """results/ JSON들의 평가 설정이 서로 비교 가능한지 검사한다.
 
     python -m benchmark.check_settings
-    python -m benchmark.check_settings --model dreamsim_dinov2_vitb14
+    python -m benchmark.check_settings --model fgclip2_large
     python -m benchmark.check_settings --strict        # 경고도 실패로 취급
 
 모델 간 숫자를 나란히 놓으려면 판정·데이터·프로토콜이 같아야 한다(README의
