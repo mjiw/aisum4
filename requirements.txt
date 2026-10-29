@@ -1,0 +1,10 @@
+# 임베딩 속도 측정용 의존성
+# torch는 GPU/CUDA 버전에 맞는 것을 먼저 설치한다 (https://pytorch.org/get-started/locally/)
+torch
+pillow
+numpy
+dreamsim           # DreamSim
+transformers>=4.56 # DINOv3
+open_clip_torch    # OpenVision2
+datasets>=3.6      # SOP / LookBench 로딩
+huggingface_hub
