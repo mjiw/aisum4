@@ -19,6 +19,9 @@ PYTHONUTF8=1 pip install -r requirements.txt -r benchmark/requirements.txt
 
 DreamSim은 `speed.py`의 기본 기준 모델이라, 속도 비교를 하려면 설치돼 있어야 합니다.
 
+MODA 모델은 transformers가 아니라 **OpenCLIP**으로 가중치를 올립니다
+(`open_clip_torch`, `benchmark/requirements.txt`에 포함).
+
 DINOv3는 HuggingFace **gated 저장소**라 사전 승인이 필요합니다.
 
 1. https://huggingface.co/facebook/dinov3-vitb16-pretrain-lvd1689m 에서 라이선스 동의

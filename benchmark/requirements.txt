@@ -5,3 +5,7 @@ transformers>=4.56
 torchvision
 datasets>=3.6
 huggingface_hub
+# MODA 래퍼가 OpenCLIP으로 가중치를 올린다. image_resize_mode 인자가 필요해
+# 2.24 이상이어야 하고, 3.3.0에서 검증했다. 지금까지는 dreamsim의 전이
+# 의존성으로만 들어와 dreamsim을 빼면 깨졌다.
+open_clip_torch>=2.24
