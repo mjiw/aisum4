@@ -1,7 +1,7 @@
 """임베딩 모델 평가 CLI (LookBench / SOP).
 
-    python -m benchmark.run_eval --model dinov3_vitb16 --config real_studio_flat
-    python -m benchmark.run_eval --model dinov3_vitb16 --dataset sop
+    python -m benchmark.run_eval --model openvision_vitl14 --config real_studio_flat
+    python -m benchmark.run_eval --model openvision_vitl14 --dataset sop
 
 자주 쓰는 옵션:
     --limit 200      쿼리/갤러리를 잘라서 빠르게 스모크 테스트
@@ -22,7 +22,7 @@ CONFIG_PATH = ROOT / "config.json"
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--model", default="dinov3_vitb16")
+    p.add_argument("--model", default="openvision_vitl14")
     p.add_argument("--dataset", default="lookbench", choices=["lookbench", "sop"])
     p.add_argument("--config", default=None,
                    help="LookBench는 서브셋 이름, SOP는 split 이름 (기본값은 config.json)")
