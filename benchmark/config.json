@@ -65,6 +65,15 @@
       "embed_dim": 1792,
       "batch_size": 16,
       "cache_dir": "./model_cache/dreamsim"
+    },
+    "fgclip2_large": {
+      "hf_id": "qihoo360/fg-clip2-large",
+      "embed_dim": 1024,
+      "pooling": "map",
+      "max_num_patches": 256,
+      "batch_size": 16,
+      "cache_dir": "./model_cache/fgclip2_large",
+      "revision": "4d1d5dc35c716902f07c172dbfc23b82a7bc6bf3"
     }
   }
 }

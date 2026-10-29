@@ -9,6 +9,8 @@ import importlib
 _REGISTRY = {
     # 현재 파이프라인이 쓰는 모델. 기존 구현을 재사용한다.
     "dreamsim": ("dreamsim", "DreamSim"),
+    # FG-CLIP 2 Large (SigLIP2 NaFlex ViT-L/16). 비전 타워 MAP pooling, 1024차원.
+    "fgclip2_large": ("fgclip2", "FgClip2"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }
