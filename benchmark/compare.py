@@ -6,8 +6,8 @@
 
 팀원들이 각자 돌린 결과 JSON을 benchmark/results/에 모아두고 실행하면 된다.
 데이터셋마다 지표가 다르므로 표를 나눠서 출력한다.
-    LookBench — coarse/fine Recall @1, @10  (4개)
-    SOP       — exact Recall @1, @10        (2개)
+    LookBench — coarse/fine Recall @1, @10 + mAP@10  (6개)
+    SOP       — exact Recall @1, @10 + mAP@10        (3개)
 """
 
 import argparse

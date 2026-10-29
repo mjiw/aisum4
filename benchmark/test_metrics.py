@@ -78,6 +78,7 @@ def index():
 
 
 def test_perfect_ranking(index):
+    # map_k_values를 안 주면 기존과 똑같이 Recall만 나온다
     got = evaluate([QUERY], np.array([[0, 1, 2, 3, 4]]), index, [1, 10],
                    ["coarse", "fine"], progress=False)
     assert got == {"coarse_recall@1": 1.0, "coarse_recall@10": 1.0,
@@ -114,3 +115,55 @@ def test_averages_over_queries(index):
     got = evaluate([QUERY, q2], np.array([[0, 1], [0, 1]]), index, [1],
                    ["exact"], progress=False)
     assert got["exact_recall@1"] == 0.5
+
+
+# --- mAP@K 집계 ---
+
+def test_count_relevant(index):
+    assert index.count_relevant(QUERY, ["exact", "coarse", "fine"]) == \
+        {"exact": 1, "coarse": 4, "fine": 2}
+
+
+def test_map_perfect_ranking(index):
+    got = evaluate([QUERY], np.array([[0, 1, 2, 3, 4]]), index, [1],
+                   ["coarse", "fine"], map_k_values=[5], progress=False)
+    assert got["fine_map@5"] == 1.0
+    assert got["coarse_map@5"] == 1.0
+
+
+def test_map_hand_computed(index):
+    """fine 정답(A=0, B=1)이 2위, 4위: AP = (1/2 + 2/4) / min(2, 5) = 0.5."""
+    got = evaluate([QUERY], np.array([[4, 0, 2, 1, 3]]), index, [1],
+                   ["fine"], map_k_values=[5], progress=False)
+    assert got["fine_map@5"] == 0.5
+
+
+def test_map_denominator_counts_missed_relevant(index):
+    """top-K에 못 들어온 정답도 분모에 들어간다: fine 정답 2개 중 1위 하나만 → 0.5."""
+    got = evaluate([QUERY], np.array([[0, 4]]), index, [1],
+                   ["fine"], map_k_values=[2], progress=False)
+    assert got["fine_map@2"] == 0.5
+
+
+def test_map_denominator_capped_at_k(index):
+    """정답이 K개보다 많으면 분모는 K: coarse 정답 4개, top-2가 모두 정답 → 1.0."""
+    got = evaluate([QUERY], np.array([[0, 1]]), index, [1],
+                   ["coarse"], map_k_values=[2], progress=False)
+    assert got["coarse_map@2"] == 1.0
+
+
+def test_map_exclude_self_leave_one_out():
+    """leave-one-out에서는 쿼리 자신을 정답 수에서 뺀다. 같은 상품 2장 중 나머지 1장이 1위면 1.0."""
+    g = [{"item_id": "P", "category": "c", "attrs": []},
+         {"item_id": "P", "category": "c", "attrs": []},
+         {"item_id": "Q", "category": "c", "attrs": []}]
+    idx = RelevanceIndex(g)
+    got = evaluate([g[0]], np.array([[1, 2]]), idx, [1], ["exact"],
+                   map_k_values=[2], exclude_self=True, progress=False)
+    assert got["exact_map@2"] == 1.0
+
+
+def test_map_requires_enough_topk(index):
+    with pytest.raises(ValueError, match="topk가 부족"):
+        evaluate([QUERY], np.array([[0, 1]]), index, [1], ["fine"],
+                 map_k_values=[10], progress=False)
