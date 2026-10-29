@@ -10,6 +10,15 @@
 pip install -r requirements.txt -r benchmark/requirements.txt
 ```
 
+**한국어(비 UTF-8) Windows에서는 `dreamsim` 설치가 실패합니다.** setup.py가 README를
+시스템 코드페이지(cp949)로 읽다 `UnicodeDecodeError`가 납니다. UTF-8 모드로 설치하세요.
+
+```bash
+PYTHONUTF8=1 pip install -r requirements.txt -r benchmark/requirements.txt
+```
+
+DreamSim은 `speed.py`의 기본 기준 모델이라, 속도 비교를 하려면 설치돼 있어야 합니다.
+
 DINOv3는 HuggingFace **gated 저장소**라 사전 승인이 필요합니다.
 
 1. https://huggingface.co/facebook/dinov3-vitb16-pretrain-lvd1689m 에서 라이선스 동의
@@ -59,21 +68,36 @@ metric을 고쳐 다시 돌릴 때는 인코딩을 건너뜁니다.
 
 ## 지표
 
-**LookBench — 4개**
+**LookBench — 8개** (기준 2종 x Recall/mAP x @1/@10)
 
 | 지표 | 정답 조건 |
 |---|---|
-| `coarse_recall@1`, `@10` | category 일치 |
-| `fine_recall@1`, `@10` | category + 속성 전부 일치 |
+| `coarse_recall@1`, `@10`, `coarse_map@1`, `@10` | category 일치 |
+| `fine_recall@1`, `@10`, `fine_map@1`, `@10` | category + 속성 전부 일치 |
 
-**SOP — 2개**
+**SOP — 4개**
 
 | 지표 | 정답 조건 |
 |---|---|
-| `exact_recall@1`, `@10` | `item_id` 일치 (같은 상품) |
+| `exact_recall@1`, `@10`, `exact_map@1`, `@10` | `item_id` 일치 (같은 상품) |
+
+`config.json`의 `datasets.*.metrics`로 `recall` / `map`을 켭니다.
 
 Recall@K는 검색 벤치마크 관례대로 **top-K 안에 정답이 하나라도 있으면 1**(hit rate)이며
 쿼리 전체 평균입니다. LookBench 논문과 SOP 표준이 모두 이 정의를 씁니다.
+
+mAP@K는 `AP@K = (1/min(R, K)) * sum_{i<=K} rel(i) * P@i`의 쿼리 평균입니다(R은 갤러리
+전체의 정답 개수). Recall@K가 "정답이 들어왔는가"만 보는 데 비해 정답이 몇 개나 얼마나
+위에 있는지를 봅니다. 분모를 `min(R, K)`로 둔 규약이 결과 JSON의 `map_denominator`에
+기록됩니다. 두 가지를 알고 읽어야 합니다.
+
+- `R >= K`면 Precision@K와 같아집니다. LookBench coarse는 정답이 서브셋당 중앙값
+  37~190개라 사실상 Precision@10입니다.
+- **논문이 보고하는 전체 순위 mAP와는 다른 값입니다.** `topk`가 10이라 10위 밖 정답은
+  보지 않고, 자른 구간을 `min(R, K)`로 정규화하므로 전체 순위 mAP보다 커질 수도 있습니다.
+  논문 수치와 직접 비교하지 마세요.
+
+`map@1`은 정의상 `recall@1`과 항상 같습니다(분모가 1). 새 정보는 `@10`에만 있습니다.
 
 SOP에 `fine`을 쓰지 않는 이유는 속성 라벨이 없어 `coarse`와 같은 값이 되기 때문입니다.
 그 값은 카테고리 12종 기준이라 어떤 모델이든 0.94~0.97이 나와 판별력이 없습니다.
@@ -191,6 +215,45 @@ python 3.14.5 / Windows 11
 torch 2.13.0+cu130 (CUDA 13.1, RTX 5070 Ti)
 torchvision 0.28.0+cu130 / datasets 5.0.1 / numpy 2.5.2
 ```
+
+### 임베딩 속도 측정
+
+```bash
+# 기본값: franca_vitb14 와 dreamsim 을 LookBench · SOP 표본으로 비교
+python -m benchmark.speed
+
+# 자기 모델을 DreamSim 기준으로
+python -m benchmark.speed --models <이름> dreamsim --no-noise
+```
+
+`model.embed()` 한 번에 드는 시간을 잽니다 — 전처리(CPU) + 순전파(GPU) + L2 정규화 +
+CPU 전송까지, `encode.py`가 배치마다 실제로 부담하는 구간 전부입니다. 이미지 디코딩
+(parquet → PIL)은 모델과 무관한 비용이라 측정 전에 끝내 둡니다.
+
+**정확도 평가와 같은 설정으로 잽니다.** `batch_size`·전처리·VRAM 상한·GPU 락을
+`config.json`에서 그대로 읽으므로 여기서 나온 초/장이 `run_eval` 실행 조건과 같습니다.
+배치 크기는 결과에 영향을 주니 모델 간 비교 시 반드시 같아야 합니다(현재 전부 16).
+
+| 옵션 | 뜻 |
+|---|---|
+| `--models` | 측정할 모델들. 기준 모델도 함께 넣어야 비율이 나옵니다 |
+| `--baseline` | 비율의 기준 (기본 `dreamsim`). `--models`에 없으면 첫 모델이 기준 |
+| `--sources` | `lookbench` / `sop` (기본 둘 다) |
+| `--n` | 데이터셋당 표본 수 (기본 512). 풀 크기에 비례해 뽑습니다 |
+| `--repeats` | 반복 횟수 (기본 3, 중앙값 사용) |
+| `--no-noise` | LookBench 장수를 서브셋만(11,124)으로. 생략하면 noise 포함 69,399 |
+
+표본을 **풀 크기에 비례해서** 뽑는 이유는 LookBench 69,399장 중 noise 풀이 58,275장
+(84%)이라서입니다. 서브셋에서만 뽑으면 실제 인코딩 부하와 달라집니다 — 전처리 비용이
+원본 해상도에 비례하는데 noise 이미지가 서브셋보다 작습니다.
+
+출력은 **소요 시간 비율**이라 작을수록 빠릅니다(기준 모델 = 1.00). 결과는
+`benchmark/results/speed.json`에 저장되며 `compare.py`는 이 파일을 건너뜁니다.
+
+> ⚠ 이 비교는 **각 모델을 공식 배포 상태 그대로** 돌린 값입니다. attention 구현이
+> 모델마다 달라(transformers·timm은 SDPA, Franca의 hub 코드는 xFormers가 없으면 naive
+> matmul로 폴백) 파라미터 수와 순서가 맞지 않을 수 있습니다. 실측에서 ViT-L/14가
+> ViT-B/14보다 빠르게 나온 적이 있습니다. 연산량 비교로 읽지 마세요.
 
 ### 새 모델 추가하는 법
 

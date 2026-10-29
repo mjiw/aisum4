@@ -1,4 +1,7 @@
 # benchmark/ 전용 추가 의존성. 루트 requirements.txt와 함께 설치한다.
 transformers>=4.56
+# franca 래퍼의 전처리(torchvision.transforms)가 직접 쓴다. 지금까지는 dreamsim의
+# 전이 의존성으로만 들어와 dreamsim을 빼면 깨졌다.
+torchvision
 datasets>=3.6
 huggingface_hub
