@@ -85,6 +85,16 @@
       "batch_size": 8,
       "cache_dir": "./model_cache/qwen3_vl_embedding_2b",
       "revision": "9f2f7e710d6d81056aa5c0a4f04764fec6bb7bda"
+    },
+    "wemm_embedding_2b": {
+      "hf_id": "tencent/WeMM-Embedding-2B",
+      "embed_dim": 1024,
+      "full_dim": 2048,
+      "pooling": "last_token",
+      "dtype": "bfloat16",
+      "batch_size": 8,
+      "cache_dir": "./model_cache/wemm_embedding_2b",
+      "revision": "bbd6cd4bf52cfc6716f752a2df80b2706720bd95"
     }
   }
 }

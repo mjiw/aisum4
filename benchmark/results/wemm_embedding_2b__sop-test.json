@@ -1,0 +1,54 @@
+{
+  "model": "wemm_embedding_2b",
+  "model_metadata": {
+    "hf_id": "tencent/WeMM-Embedding-2B",
+    "revision": "bbd6cd4bf52cfc6716f752a2df80b2706720bd95",
+    "pooling": "last_token(<embedding>)",
+    "instruction": null,
+    "input": "image_only",
+    "full_dim": 2048,
+    "mrl_dim": 1024,
+    "matryoshka_dimensions": [
+      64,
+      128,
+      256,
+      512,
+      1024,
+      2048
+    ],
+    "image_patch_size": 16,
+    "padding_side": "right",
+    "dtype": "bfloat16"
+  },
+  "embed_dim": 1024,
+  "dataset_name": "sop",
+  "dataset": "nyris/stanford-online-products-v1",
+  "dataset_revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+  "dataset_version": null,
+  "config": "test",
+  "n_queries": 60502,
+  "n_gallery": 60502,
+  "noise_pool": false,
+  "exclude_self": true,
+  "fine_mode": "exact",
+  "criteria": [
+    "exact"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "exact_recall@1": 0.7221,
+    "exact_recall@10": 0.8725,
+    "exact_map@1": 0.7221,
+    "exact_map@10": 0.483
+  },
+  "run": {
+    "timestamp": "2026-10-12T21:53:27",
+    "device": "cuda",
+    "batch_size": 8,
+    "gpu_memory_fraction": 0.85,
+    "limit": null
+  }
+}

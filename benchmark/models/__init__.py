@@ -15,6 +15,8 @@ _REGISTRY = {
     "dreamsim": ("dreamsim", "DreamSim"),
     # Qwen3-VL 기반 멀티모달 임베딩. 이미지 단독 입력, 마지막 토큰 풀링, MRL 1024차원.
     "qwen3_vl_embedding_2b": ("qwen3_vl_embedding", "Qwen3VLEmbedding"),
+    # Qwen3.5 기반 멀티모달 임베딩(Tencent). 이미지 단독 입력, <embedding> 토큰 풀링, MRL 1024차원.
+    "wemm_embedding_2b": ("wemm_embedding", "WeMMEmbedding"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }

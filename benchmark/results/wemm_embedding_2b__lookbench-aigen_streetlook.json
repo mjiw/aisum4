@@ -1,0 +1,59 @@
+{
+  "model": "wemm_embedding_2b",
+  "model_metadata": {
+    "hf_id": "tencent/WeMM-Embedding-2B",
+    "revision": "bbd6cd4bf52cfc6716f752a2df80b2706720bd95",
+    "pooling": "last_token(<embedding>)",
+    "instruction": null,
+    "input": "image_only",
+    "full_dim": 2048,
+    "mrl_dim": 1024,
+    "matryoshka_dimensions": [
+      64,
+      128,
+      256,
+      512,
+      1024,
+      2048
+    ],
+    "image_patch_size": 16,
+    "padding_side": "right",
+    "dtype": "bfloat16"
+  },
+  "embed_dim": 1024,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "aigen_streetlook",
+  "n_queries": 160,
+  "n_gallery": 58846,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "metrics": {
+    "coarse_recall@1": 0.8688,
+    "coarse_recall@10": 0.9688,
+    "fine_recall@1": 0.375,
+    "fine_recall@10": 0.5687,
+    "coarse_map@1": 0.8688,
+    "coarse_map@10": 0.5944,
+    "fine_map@1": 0.375,
+    "fine_map@10": 0.3393
+  },
+  "run": {
+    "timestamp": "2026-10-12T21:29:25",
+    "device": "cuda",
+    "batch_size": 8,
+    "gpu_memory_fraction": 0.85,
+    "limit": null
+  }
+}
