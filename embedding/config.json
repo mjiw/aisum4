@@ -16,6 +16,12 @@
       "iso_ktop": 200,
       "iso_kbottom": 50,
       "cache_dir": "./model_cache/isoclip"
+    },
+    "tipsv2": {
+      "batch_size": 16,
+      "model_id": "google/tipsv2-l14",
+      "image_size": 448,
+      "cache_dir": "./model_cache/tipsv2"
     }
   }
 }

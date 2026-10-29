@@ -20,6 +20,10 @@ config.json의 isoclip 섹션
 IsoCLIP의 utils.py / retrieval.py는 import하지 않는다. 데이터셋 코드(dassl, 로컬 datasets 패키지)까지
 딸려 들어오기 때문. 그래서 load_clip과 apply_iso는 이미지 쪽에 필요한 부분만 옮겨 왔다.
 
+encode_no_projection 등은 __init__ 안에서 import한다. IsoCLIP/src가 import 경로에 추가되는 시점이
+_add_isoclip_src() 호출 이후라서, 파일 맨 위에서 import하면 ModuleNotFoundError가 난다.
+(IDE가 import를 못 찾는다는 경고를 띄우지만 실행에는 문제없다.)
+
 gallery와 query는 반드시 같은 설정(백본, iso_ktop, iso_kbottom)으로 임베딩해야 한다.
 """
 
@@ -41,7 +45,7 @@ def _add_isoclip_src(isoclip_root: str) -> None:
         sys.path.append(str(src))
 
 
-def _iso_image_projector(W_image, W_text, iso_ktop: int, iso_kbottom: int):
+def _iso_image_projector(W_image, W_text, iso_ktop: int, iso_kbottom: int):  # 사후 보정의 핵심 함수
     """IsoCLIP/src/retrieval.py의 apply_iso 중 이미지 쪽만 옮긴 것.
 
     W_image: (d_out, d_img), W_text: (d_out, d_txt)  ->  반환: (d_img, d_out)

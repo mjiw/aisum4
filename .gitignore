@@ -21,3 +21,13 @@ results/
 .idea/
 .vscode/
 .DS_Store
+
+# 모델 가중치 (5GB+, GitHub 100MB 제한 초과)
+model_cache/
+
+# 데이터셋 (로컬에서 직접 다운로드)
+data/
+Stanford_Online_Products/
+
+# IsoCLIP 공식 레포 (별도 clone: https://github.com/.../IsoCLIP)
+IsoCLIP/
