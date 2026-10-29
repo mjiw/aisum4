@@ -49,7 +49,7 @@ python -m benchmark.compare --config real_studio_flat --sort-by fine_recall@1 --
 | `encode.py` | 임베딩 → `.npy` 캐시. 갤러리 60K장은 모델당 1회만 |
 | `retrieve.py` | 코사인 top-K (numpy 행렬곱) |
 | `relevance.py` | **정답 판정. 팀 공통 고정** |
-| `metrics.py` | Recall@K / Precision@K / nDCG@K 집계 |
+| `metrics.py` | Recall@K / mAP@K 집계 |
 | `run_eval.py` | CLI 진입점 |
 | `compare.py` | `results/*.json`을 모아 모델 비교표 출력 |
 | `probe_schema.py` | 데이터셋 실제 스키마 확인용 일회성 스크립트 |
@@ -59,21 +59,27 @@ metric을 고쳐 다시 돌릴 때는 인코딩을 건너뜁니다.
 
 ## 지표
 
-**LookBench — 4개**
+**LookBench — 6개**
 
 | 지표 | 정답 조건 |
 |---|---|
-| `coarse_recall@1`, `@10` | category 일치 |
-| `fine_recall@1`, `@10` | category + 속성 전부 일치 |
+| `coarse_recall@1`, `@10`, `coarse_map@10` | category 일치 |
+| `fine_recall@1`, `@10`, `fine_map@10` | category + 속성 전부 일치 |
 
-**SOP — 2개**
+**SOP — 3개**
 
 | 지표 | 정답 조건 |
 |---|---|
-| `exact_recall@1`, `@10` | `item_id` 일치 (같은 상품) |
+| `exact_recall@1`, `@10`, `exact_map@10` | `item_id` 일치 (같은 상품) |
 
 Recall@K는 검색 벤치마크 관례대로 **top-K 안에 정답이 하나라도 있으면 1**(hit rate)이며
 쿼리 전체 평균입니다. LookBench 논문과 SOP 표준이 모두 이 정의를 씁니다.
+
+mAP@10은 쿼리별 AP@10의 평균입니다.
+`AP@K = (1 / min(R, K)) * Σ_{k≤K} P@k · rel(k)`, R은 갤러리 전체 정답 수
+(SOP는 자기 자신 제외). Recall@K와 달리 top-K 안에서 정답이 **몇 개, 몇 위에**
+들어왔는지까지 반영합니다. 분모가 min(R, K)라 LookBench coarse처럼 정답이 수천 개면
+top-10을 전부 정답으로 채워야 1이 되고, SOP처럼 상품당 이미지가 적으면 R이 분모가 됩니다.
 
 SOP에 `fine`을 쓰지 않는 이유는 속성 라벨이 없어 `coarse`와 같은 값이 되기 때문입니다.
 그 값은 카테고리 12종 기준이라 어떤 모델이든 0.94~0.97이 나와 판별력이 없습니다.
@@ -139,7 +145,7 @@ pip install -r requirements.txt -r benchmark/requirements.txt
 | 항목 | 값 | 왜 |
 |---|---|---|
 | 판정 로직 | `relevance.py` | 정답 기준이 다르면 숫자의 의미가 달라짐 |
-| 집계 | `metrics.py` | Recall@K 정의 |
+| 집계 | `metrics.py` | Recall@K, mAP@K 정의 |
 | LookBench revision | `151449aa3a906899f29fd3e0a81a21e83a48c569` (`v20251201`) | **반기마다 갱신되는 live 벤치마크** |
 | SOP revision | `24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69` | |
 | noise 풀 | **포함** (LookBench) | 빼면 갤러리가 1/15로 줄어 최대 11pp 부풀려짐 |

@@ -1,0 +1,47 @@
+{
+  "model": "gr_lite",
+  "model_metadata": {
+    "hf_id": "srpone/gr-lite",
+    "revision": "a8057f8aadaaab91670ad37949f6e1b5aa187e29",
+    "pooling": "cls",
+    "image_size": 336,
+    "trust_remote_code": true
+  },
+  "embed_dim": 1024,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "real_studio_flat",
+  "n_queries": 1011,
+  "n_gallery": 62226,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "map_k_values": [
+    10
+  ],
+  "metrics": {
+    "coarse_recall@1": 0.6588,
+    "coarse_recall@10": 0.8635,
+    "fine_recall@1": 0.3116,
+    "fine_recall@10": 0.4975,
+    "coarse_map@10": 0.3345,
+    "fine_map@10": 0.2129
+  },
+  "run": {
+    "timestamp": "2026-09-14T14:27:37",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

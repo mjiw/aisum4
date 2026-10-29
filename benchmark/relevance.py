@@ -50,6 +50,14 @@ class RelevanceIndex:
                 self.attr_mat[row, self._attr_to_id[attr]] = 1.0
         self.attr_cnt = self.attr_mat.sum(axis=1)
 
+        # mAP 분모(갤러리 전체 정답 수)용. exact/coarse는 개수만 세면 되고,
+        # fine은 같은 카테고리 행만 판정하면 되므로 카테고리별 행 목록을 둔다.
+        self._item_counts = np.bincount(self.item_ids, minlength=len(self._item_to_id))
+        self._cat_counts = np.bincount(self.cat_ids, minlength=len(self._cat_to_id))
+        order = np.argsort(self.cat_ids, kind="stable")
+        bounds = np.concatenate([[0], np.cumsum(self._cat_counts)])
+        self._cat_rows = [order[bounds[c]:bounds[c + 1]] for c in range(len(self._cat_to_id))]
+
     def _judge_rows(self, query_meta: dict, rows) -> dict:
         cat_id = self._cat_to_id.get(query_meta["category"], -1)
         item_id = self._item_to_id.get(query_meta["item_id"], -1)
@@ -81,6 +89,19 @@ class RelevanceIndex:
     def judge_at(self, query_meta: dict, rows) -> dict:
         """검색된 top-K 위치에서만 판정한다. 각 값은 길이 len(rows) 불리언 배열."""
         return self._judge_rows(query_meta, np.asarray(rows))
+
+    def count_relevant(self, query_meta: dict, criterion: str) -> int:
+        """갤러리 전체에서 정답 개수. judge(query)[criterion].sum()과 같다."""
+        if criterion == "exact":
+            item_id = self._item_to_id.get(query_meta["item_id"])
+            return 0 if item_id is None else int(self._item_counts[item_id])
+        cat_id = self._cat_to_id.get(query_meta["category"])
+        if cat_id is None:
+            return 0
+        if criterion == "coarse":
+            return int(self._cat_counts[cat_id])
+        rows = self._cat_rows[cat_id]
+        return int(self._judge_rows(query_meta, rows)[criterion].sum())
 
     def judge(self, query_meta: dict) -> dict:
         """갤러리 전체 판정. 길이 N 배열. (작은 데이터셋 확인과 테스트용)"""

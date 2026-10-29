@@ -114,3 +114,56 @@ def test_averages_over_queries(index):
     got = evaluate([QUERY, q2], np.array([[0, 1], [0, 1]]), index, [1],
                    ["exact"], progress=False)
     assert got["exact_recall@1"] == 0.5
+
+
+# --- mAP@K 집계 ---
+
+def test_count_relevant_matches_full_judge():
+    for mode in ("exact", "subset"):
+        idx = RelevanceIndex(GALLERY, fine_mode=mode)
+        for q in (QUERY, {"item_id": "E", "category": "shoes", "attrs": []},
+                  {"item_id": "ZZZ", "category": "hat", "attrs": ["floral"]}):
+            full = idx.judge(q)
+            for crit in ("exact", "coarse", "fine"):
+                assert idx.count_relevant(q, crit) == int(np.asarray(full[crit]).sum()), \
+                    f"{mode}/{crit}/{q['item_id']}"
+
+
+def test_map_perfect_ranking(index):
+    # coarse 정답 4개(A,B,C,D)가 1~4위 → AP@10 = 4/4
+    got = evaluate([QUERY], np.array([[0, 1, 2, 3, 4]]), index, [1], ["coarse", "fine"],
+                   map_k_values=[10], progress=False)
+    assert got["coarse_map@10"] == 1.0
+    assert got["fine_map@10"] == 1.0
+
+
+def test_map_penalizes_low_rank(index):
+    # fine 정답 A,B가 2위, 4위 → (1/2 + 2/4) / min(2, 10) = 0.5
+    got = evaluate([QUERY], np.array([[4, 0, 3, 1, 2]]), index, [1], ["fine"],
+                   map_k_values=[10], progress=False)
+    assert got["fine_map@10"] == 0.5
+
+
+def test_map_denominator_uses_all_relevant(index):
+    # K=2, coarse 정답 4개 중 1위만 맞음 → (1/1) / min(4, 2) = 0.5
+    got = evaluate([QUERY], np.array([[0, 4]]), index, [1], ["coarse"],
+                   map_k_values=[2], progress=False)
+    assert got["coarse_map@2"] == 0.5
+
+
+def test_map_exclude_self():
+    """leave-one-out: 자기 자신은 R에서 빠져야 한다."""
+    g = [{"item_id": "A", "category": "c", "attrs": []},
+         {"item_id": "A", "category": "c", "attrs": []},
+         {"item_id": "B", "category": "c", "attrs": []}]
+    idx = RelevanceIndex(g)
+    # 쿼리 0의 top(자기 제외) = [1, 2] → 정답 1개가 1위, R = 2 - 1 = 1 → 1.0
+    got = evaluate([g[0]], np.array([[1, 2]]), idx, [1], ["exact"],
+                   map_k_values=[2], exclude_self=True, progress=False)
+    assert got["exact_map@2"] == 1.0
+
+
+def test_map_rejects_k_wider_than_search(index):
+    with pytest.raises(ValueError, match="검색 폭"):
+        evaluate([QUERY], np.array([[0, 1]]), index, [1], ["exact"],
+                 map_k_values=[10], progress=False)
