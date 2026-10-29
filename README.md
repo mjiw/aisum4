@@ -9,12 +9,24 @@ DreamSim, DINOv3 ViT-B/16, OpenVision2 ViT-L/14 세 모델이 이미지를 임�
 pip install -r requirements.txt
 ```
 
-DINOv3(`facebook/dinov3-vitb16-pretrain-lvd1689m`)는 Hugging Face 승인이 필요한 모델입니다.
-모델 페이지에서 접근 승인을 받은 뒤 로그인해 주세요.
+### Hugging Face 로그인 (DINOv3용, 최초 1회)
+
+DINOv3(`facebook/dinov3-vitb16-pretrain-lvd1689m`)는 Meta 승인이 필요한 gated 모델이라
+승인받은 계정의 토큰으로 로그인해야 받을 수 있습니다.
+**토큰은 서연이 개인 톡으로 전달합니다.** (저장소에는 올리지 않습니다)
+
+터미널에서 한 번만 실행하고, 토큰을 붙여넣으세요.
 
 ```bash
-huggingface-cli login
+hf auth login
+# 구버전 huggingface_hub라면: huggingface-cli login
 ```
+
+- `Enter your token` → 전달받은 토큰(`hf_...`) 붙여넣기 (입력해도 화면에 안 보이는 게 정상)
+- `Add token as git credential?` → `n`
+
+로그인 정보는 PC에 저장되므로 다음부터는 다시 할 필요 없습니다. 확인은 `hf auth whoami`.
+SOP, LookBench 데이터셋과 DreamSim, OpenVision2는 로그인 없이도 받아집니다.
 
 ## 실행 (repo 루트에서)
 
