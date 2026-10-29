@@ -1,0 +1,43 @@
+{
+  "model": "unicom_vitl14",
+  "model_metadata": {
+    "source": "github.com/deepglint/unicom",
+    "variant": "ViT-L/14",
+    "checkpoint": "FP16-ViT-L-14.pt",
+    "pooling": "flatten+bn_head",
+    "image_size": 224
+  },
+  "embed_dim": 768,
+  "dataset_name": "sop",
+  "dataset": "nyris/stanford-online-products-v1",
+  "dataset_revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+  "dataset_version": null,
+  "config": "test",
+  "n_queries": 60502,
+  "n_gallery": 60502,
+  "noise_pool": false,
+  "exclude_self": true,
+  "fine_mode": "exact",
+  "criteria": [
+    "exact"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "map_k_values": [
+    10
+  ],
+  "metrics": {
+    "exact_recall@1": 0.7256,
+    "exact_recall@10": 0.8772,
+    "exact_map@10": 0.483
+  },
+  "run": {
+    "timestamp": "2026-10-12T11:09:13",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

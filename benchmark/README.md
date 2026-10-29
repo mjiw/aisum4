@@ -223,7 +223,42 @@ LookBench는 noise 임베딩이 서브셋 간 재사용되어 첫 서브셋만 �
 | DINOv3 ViT-B/16 | 768 | (이 폴더) |
 | DINOv2 ViT-B/14 | 768 | 파이프라인 검증 대역 겸 비교 baseline |
 | GR-Lite (ViT-L/16) | 1024 | `models/gr_lite.py` |
+| UNICOM ViT-L/14 | 768 | `models/unicom.py` |
 | DreamSim ensemble | 1792 | 현재 파이프라인 baseline |
+
+### UNICOM 참고사항
+
+`deepglint/unicom` ViT-L/14는 LAION-400M을 클러스터링해 학습한 범용 이미지 검색
+모델입니다(ICLR 2023). 다른 모델과 설치 방식이 다릅니다.
+
+- **HF Hub에 없습니다.** PyPI 패키지도 없어(`pip install unicom` 불가) GitHub
+  소스를 받아 `sys.path`에 얹습니다. `models/unicom.py`가 소스가 없으면
+  `~/.cache/unicom_src`로 자동 clone하므로 **따로 설정할 것은 없습니다.**
+  경로를 바꾸려면 config의 `source_dir`를 고치세요.
+- **가중치는 GitHub 릴리스에서 받습니다.** 첫 실행 때 `FP16-ViT-L-14.pt`(1.1GB)를
+  `model_cache/unicom`에 내려받고, 이후 실행마다 sha256을 검증합니다
+  (1.1GB를 다시 읽으므로 모델 로딩이 10초쯤 걸립니다).
+- **입력은 224px 고정**입니다. `pos_embed`를 보간하지 않고 헤드 첫 Linear가
+  `dim * num_patches`로 잡혀 있어 336을 넣으면 에러가 납니다(336은 별도 체크포인트).
+  전처리는 CLIP과 같습니다(bicubic resize → center crop → CLIP 정규화).
+- **출력이 L2 정규화돼 있지 않습니다.** 헤드 마지막이 BatchNorm1d라
+  `base.embed()`의 정규화가 꼭 필요합니다. BatchNorm 때문에 `eval()` 고정도
+  필수이며, 내부에서 fp16 autocast를 쓰므로 같은 이미지라도 배치 구성에 따라
+  1e-4 수준의 차이가 납니다(Recall/mAP에는 영향 없음).
+
+**실행**
+
+```bash
+python -m benchmark.run_eval --model unicom_vitl14 --config real_studio_flat
+python -m benchmark.run_eval --model unicom_vitl14 --config real_streetlook
+python -m benchmark.run_eval --model unicom_vitl14 --config aigen_studio
+python -m benchmark.run_eval --model unicom_vitl14 --config aigen_streetlook
+python -m benchmark.run_eval --model unicom_vitl14 --dataset sop
+```
+
+> 224px라 GR-Lite(336px)보다 가볍습니다. RTX 4090 기준 임베딩 속도가
+> DreamSim의 약 0.56배(SOP)/0.62배(LookBench), GR-Lite의 약 1/4입니다.
+> 13만 장 인코딩에 약 25분 걸립니다.
 
 ### GR-Lite 참고사항
 

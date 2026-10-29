@@ -16,6 +16,9 @@ _REGISTRY = {
     # GR-Lite는 커스텀 아키텍처(model_type="gr_lite")라 AutoImageProcessor가 없어
     # 전처리를 직접 만든다. dinov3 래퍼를 재사용할 수 없다.
     "gr_lite": ("gr_lite", "GrLite"),
+    # UNICOM은 PyPI 패키지가 없어 저장소 소스를 sys.path에 얹어 쓴다.
+    # config의 source_dir 참고.
+    "unicom_vitl14": ("unicom", "Unicom"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }

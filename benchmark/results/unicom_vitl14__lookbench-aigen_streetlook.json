@@ -1,0 +1,47 @@
+{
+  "model": "unicom_vitl14",
+  "model_metadata": {
+    "source": "github.com/deepglint/unicom",
+    "variant": "ViT-L/14",
+    "checkpoint": "FP16-ViT-L-14.pt",
+    "pooling": "flatten+bn_head",
+    "image_size": 224
+  },
+  "embed_dim": 768,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "aigen_streetlook",
+  "n_queries": 160,
+  "n_gallery": 58846,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "map_k_values": [
+    10
+  ],
+  "metrics": {
+    "coarse_recall@1": 0.8,
+    "coarse_recall@10": 0.9688,
+    "fine_recall@1": 0.3312,
+    "fine_recall@10": 0.5437,
+    "coarse_map@10": 0.4927,
+    "fine_map@10": 0.2614
+  },
+  "run": {
+    "timestamp": "2026-10-12T11:02:48",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}
