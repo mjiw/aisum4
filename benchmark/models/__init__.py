@@ -9,6 +9,8 @@ import importlib
 _REGISTRY = {
     # 현재 파이프라인이 쓰는 모델. 기존 구현을 재사용한다.
     "dreamsim": ("dreamsim", "DreamSim"),
+    # OpenVision ViT-L/14 @224 (open_clip). avg pooling + proj, 768차원.
+    "openvision_vitl14": ("openvision", "OpenVision"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }

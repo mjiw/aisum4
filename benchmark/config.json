@@ -65,6 +65,14 @@
       "embed_dim": 1792,
       "batch_size": 16,
       "cache_dir": "./model_cache/dreamsim"
+    },
+    "openvision_vitl14": {
+      "hf_id": "UCSC-VLAA/openvision-vit-large-patch14-224",
+      "embed_dim": 768,
+      "pooling": "avg",
+      "batch_size": 16,
+      "cache_dir": "./model_cache/openvision_vitl14",
+      "revision": "8586d8213024e2946cf1c7db6071d430a286cb5b"
     }
   }
 }
