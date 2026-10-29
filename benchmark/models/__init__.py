@@ -13,6 +13,8 @@ _REGISTRY = {
     "dinov2_vitb14": ("dinov3", "DinoV3"),
     # 현재 파이프라인이 쓰는 모델. 기존 구현을 재사용한다.
     "dreamsim": ("dreamsim", "DreamSim"),
+    # MCIP: SigLIP SO400M@384를 이미지 검색용으로 미세조정 (SISAP'24).
+    "mcip_so400m_14_384": ("mcip", "MCIP"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }

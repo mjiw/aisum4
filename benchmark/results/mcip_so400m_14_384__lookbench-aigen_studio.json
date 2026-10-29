@@ -1,0 +1,51 @@
+{
+  "model": "mcip_so400m_14_384",
+  "model_metadata": {
+    "hf_id": "Visual-Computing-Group/MCIP-ViT-SO400M-14-SigLIP-384",
+    "revision": "b45cb24d1756b19976d5294a7ce3641cbecf9497",
+    "filename": "MCIP-ViT-SO400M-14-SigLIP-384.pth",
+    "open_clip_arch": "ViT-SO400M-14-SigLIP-384",
+    "pooling": "map (SigLIP attention pooling)",
+    "tower": "vision_only",
+    "image_size": 384,
+    "preprocess": "open_clip webli cfg {'mean': (0.5, 0.5, 0.5), 'std': (0.5, 0.5, 0.5), 'interpolation': 'bicubic', 'resize_mode': 'squash'}"
+  },
+  "embed_dim": 1152,
+  "dataset_name": "lookbench",
+  "dataset": "srpone/look-bench",
+  "dataset_revision": "151449aa3a906899f29fd3e0a81a21e83a48c569",
+  "dataset_version": "v20251201",
+  "config": "aigen_studio",
+  "n_queries": 193,
+  "n_gallery": 59254,
+  "noise_pool": true,
+  "exclude_self": false,
+  "fine_mode": "exact",
+  "criteria": [
+    "coarse",
+    "fine"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "map_k_values": [
+    10
+  ],
+  "map_self_in_denominator": false,
+  "metrics": {
+    "coarse_recall@1": 0.9534,
+    "coarse_recall@10": 1.0,
+    "fine_recall@1": 0.3627,
+    "fine_recall@10": 0.6684,
+    "coarse_map@10": 0.7894,
+    "fine_map@10": 0.3338
+  },
+  "run": {
+    "timestamp": "2026-10-12T21:14:32",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

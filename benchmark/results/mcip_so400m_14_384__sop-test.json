@@ -1,0 +1,47 @@
+{
+  "model": "mcip_so400m_14_384",
+  "model_metadata": {
+    "hf_id": "Visual-Computing-Group/MCIP-ViT-SO400M-14-SigLIP-384",
+    "revision": "b45cb24d1756b19976d5294a7ce3641cbecf9497",
+    "filename": "MCIP-ViT-SO400M-14-SigLIP-384.pth",
+    "open_clip_arch": "ViT-SO400M-14-SigLIP-384",
+    "pooling": "map (SigLIP attention pooling)",
+    "tower": "vision_only",
+    "image_size": 384,
+    "preprocess": "open_clip webli cfg {'mean': (0.5, 0.5, 0.5), 'std': (0.5, 0.5, 0.5), 'interpolation': 'bicubic', 'resize_mode': 'squash'}"
+  },
+  "embed_dim": 1152,
+  "dataset_name": "sop",
+  "dataset": "nyris/stanford-online-products-v1",
+  "dataset_revision": "24a1b9b8ec6c0b1fc4dd324f24b2d829413a6c69",
+  "dataset_version": null,
+  "config": "test",
+  "n_queries": 60502,
+  "n_gallery": 60502,
+  "noise_pool": false,
+  "exclude_self": true,
+  "fine_mode": "exact",
+  "criteria": [
+    "exact"
+  ],
+  "k_values": [
+    1,
+    10
+  ],
+  "map_k_values": [
+    10
+  ],
+  "map_self_in_denominator": true,
+  "metrics": {
+    "exact_recall@1": 0.7335,
+    "exact_recall@10": 0.8761,
+    "exact_map@10": 0.4143
+  },
+  "run": {
+    "timestamp": "2026-10-12T21:53:08",
+    "device": "cuda",
+    "batch_size": 16,
+    "gpu_memory_fraction": 0.35,
+    "limit": null
+  }
+}

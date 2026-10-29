@@ -75,6 +75,16 @@
       "embed_dim": 1792,
       "batch_size": 16,
       "cache_dir": "./model_cache/dreamsim"
+    },
+    "mcip_so400m_14_384": {
+      "hf_id": "Visual-Computing-Group/MCIP-ViT-SO400M-14-SigLIP-384",
+      "filename": "MCIP-ViT-SO400M-14-SigLIP-384.pth",
+      "embed_dim": 1152,
+      "image_size": 384,
+      "pooling": "map",
+      "batch_size": 16,
+      "cache_dir": "./model_cache/mcip",
+      "revision": "b45cb24d1756b19976d5294a7ce3641cbecf9497"
     }
   }
 }
