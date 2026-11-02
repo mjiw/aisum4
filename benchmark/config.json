@@ -83,6 +83,14 @@
       "batch_size": 16,
       "cache_dir": "./model_cache/tianmu_mere",
       "revision": "9afbc02c9ad621afcdc22944370569736c517f55"
+    },
+    "eva02_large": {
+      "hf_id": "timm/eva02_large_patch14_224.mim_m38m",
+      "embed_dim": 1024,
+      "pooling": "mean",
+      "batch_size": 32,
+      "cache_dir": "./model_cache/eva02_large",
+      "revision": "7f2952e14b92a019451691252b3b234f55fcad97"
     }
   }
 }

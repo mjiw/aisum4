@@ -14,6 +14,7 @@ _REGISTRY = {
     # 현재 파이프라인이 쓰는 모델. 기존 구현을 재사용한다.
     "dreamsim": ("dreamsim", "DreamSim"),
     "tianmu_mere": ("tianmu_mere", "TianmuMERE"),
+    "eva02_large": ("eva02_large", "EVA02Large"),
     # "siglip2": ("siglip2", "SigLip2"),
     # "clip_vitl14": ("clip", "Clip"),
 }
