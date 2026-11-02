@@ -1,0 +1,424 @@
+{
+ "subsets": [
+  {
+   "config": "real_studio_flat",
+   "n_queries": 50,
+   "models": [
+    "dreamsim",
+    "unicom_vitl14",
+    "gr_lite",
+    "dinov2_vitb14",
+    "bge_vl_large"
+   ]
+  },
+  {
+   "config": "real_streetlook",
+   "n_queries": 50,
+   "models": [
+    "dreamsim",
+    "unicom_vitl14",
+    "gr_lite",
+    "dinov2_vitb14"
+   ]
+  },
+  {
+   "config": "aigen_studio",
+   "n_queries": 50,
+   "models": [
+    "dreamsim",
+    "unicom_vitl14",
+    "gr_lite",
+    "dinov2_vitb14"
+   ]
+  },
+  {
+   "config": "aigen_streetlook",
+   "n_queries": 50,
+   "models": [
+    "dreamsim",
+    "unicom_vitl14",
+    "gr_lite",
+    "dinov2_vitb14"
+   ]
+  }
+ ],
+ "generated_with": {
+  "queries": 50,
+  "topk": 10,
+  "select": "mixed"
+ },
+ "models": [
+  {
+   "key": "dreamsim",
+   "label": "DreamSim",
+   "baseline": true
+  },
+  {
+   "key": "unicom_vitl14",
+   "label": "UNICOM ViT-L/14",
+   "baseline": false
+  },
+  {
+   "key": "gr_lite",
+   "label": "GR-Lite",
+   "baseline": false
+  },
+  {
+   "key": "dinov2_vitb14",
+   "label": "DINOv2 ViT-B/14",
+   "baseline": false
+  },
+  {
+   "key": "bge_vl_large",
+   "label": "BGE-VL-Large",
+   "baseline": false
+  }
+ ],
+ "summary": [
+  {
+   "model": "dreamsim",
+   "model_metadata": {
+    "dreamsim_type": "ensemble"
+   },
+   "device": "cuda",
+   "gpu": "NVIDIA GeForce RTX 4090",
+   "torch": "2.14.0+cu130",
+   "dataset": "lookbench",
+   "config": "real_studio_flat",
+   "split": "query",
+   "n_images": 200,
+   "batch_size": 16,
+   "input_shape": [
+    3,
+    224,
+    224
+   ],
+   "repeats": 3,
+   "sec_per_1000": 9.577,
+   "images_per_sec": 104.42,
+   "preprocess_sec_per_1000": 5.199,
+   "gpu_sec_per_1000": 4.099,
+   "peak_vram_mb": 1236.2,
+   "peak_vram_reserved_mb": 1446.0,
+   "model_params": 265990656,
+   "model_size_mb": 1014.7,
+   "embed_dim": 1792,
+   "embedding_bytes": 7168,
+   "gallery_60k_mb": 410.2,
+   "timestamp": "2026-11-02T13:42:21",
+   "label": "DreamSim",
+   "measured": true,
+   "is_baseline": true,
+   "speed_ratio": 1.0,
+   "gpu_ratio": 1.0,
+   "accuracy": {
+    "real_studio_flat": {
+     "coarse_recall@1": 0.8675,
+     "coarse_recall@10": 0.9377,
+     "fine_recall@1": 0.3858,
+     "fine_recall@10": 0.6182,
+     "coarse_map@10": 0.5762,
+     "fine_map@10": 0.2911
+    },
+    "real_streetlook": {
+     "coarse_recall@1": 0.6534,
+     "coarse_recall@10": 0.8644,
+     "fine_recall@1": 0.261,
+     "fine_recall@10": 0.4608,
+     "coarse_map@10": 0.3414,
+     "fine_map@10": 0.199
+    },
+    "aigen_studio": {
+     "coarse_recall@1": 0.7358,
+     "coarse_recall@10": 0.9326,
+     "fine_recall@1": 0.2953,
+     "fine_recall@10": 0.5699,
+     "coarse_map@10": 0.4667,
+     "fine_map@10": 0.2126
+    },
+    "aigen_streetlook": {
+     "coarse_recall@1": 0.7562,
+     "coarse_recall@10": 0.9062,
+     "fine_recall@1": 0.3375,
+     "fine_recall@10": 0.5312,
+     "coarse_map@10": 0.4307,
+     "fine_map@10": 0.2647
+    }
+   }
+  },
+  {
+   "model": "unicom_vitl14",
+   "model_metadata": {
+    "source": "github.com/deepglint/unicom",
+    "variant": "ViT-L/14",
+    "checkpoint": "FP16-ViT-L-14.pt",
+    "pooling": "flatten+bn_head",
+    "image_size": 224
+   },
+   "device": "cuda",
+   "gpu": "NVIDIA GeForce RTX 4090",
+   "torch": "2.14.0+cu130",
+   "dataset": "lookbench",
+   "config": "real_studio_flat",
+   "split": "query",
+   "n_images": 200,
+   "batch_size": 16,
+   "input_shape": [
+    3,
+    224,
+    224
+   ],
+   "repeats": 3,
+   "sec_per_1000": 7.523,
+   "images_per_sec": 132.92,
+   "preprocess_sec_per_1000": 5.512,
+   "gpu_sec_per_1000": 1.834,
+   "peak_vram_mb": 2330.3,
+   "peak_vram_reserved_mb": 2380.0,
+   "model_params": 572328448,
+   "model_size_mb": 2183.3,
+   "embed_dim": 768,
+   "embedding_bytes": 3072,
+   "gallery_60k_mb": 175.8,
+   "timestamp": "2026-11-02T13:46:47",
+   "label": "UNICOM ViT-L/14",
+   "measured": true,
+   "is_baseline": false,
+   "speed_ratio": 0.7855278270857262,
+   "gpu_ratio": 0.447426201512564,
+   "accuracy": {
+    "real_studio_flat": {
+     "coarse_recall@1": 0.8704,
+     "coarse_recall@10": 0.9466,
+     "fine_recall@1": 0.3838,
+     "fine_recall@10": 0.5955,
+     "coarse_map@10": 0.6381,
+     "fine_map@10": 0.2914
+    },
+    "real_streetlook": {
+     "coarse_recall@1": 0.7227,
+     "coarse_recall@10": 0.8919,
+     "fine_recall@1": 0.2671,
+     "fine_recall@10": 0.4771,
+     "coarse_map@10": 0.4328,
+     "fine_map@10": 0.21
+    },
+    "aigen_studio": {
+     "coarse_recall@1": 0.8394,
+     "coarse_recall@10": 0.9689,
+     "fine_recall@1": 0.3264,
+     "fine_recall@10": 0.6166,
+     "coarse_map@10": 0.6017,
+     "fine_map@10": 0.2619
+    },
+    "aigen_streetlook": {
+     "coarse_recall@1": 0.8,
+     "coarse_recall@10": 0.9688,
+     "fine_recall@1": 0.3312,
+     "fine_recall@10": 0.5437,
+     "coarse_map@10": 0.4927,
+     "fine_map@10": 0.2614
+    }
+   }
+  },
+  {
+   "model": "gr_lite",
+   "model_metadata": {
+    "hf_id": "srpone/gr-lite",
+    "revision": "a8057f8aadaaab91670ad37949f6e1b5aa187e29",
+    "pooling": "cls",
+    "image_size": 336,
+    "trust_remote_code": true
+   },
+   "device": "cuda",
+   "gpu": "NVIDIA GeForce RTX 4090",
+   "torch": "2.14.0+cu130",
+   "dataset": "lookbench",
+   "config": "real_studio_flat",
+   "split": "query",
+   "n_images": 200,
+   "batch_size": 16,
+   "input_shape": [
+    3,
+    336,
+    336
+   ],
+   "repeats": 3,
+   "sec_per_1000": 13.712,
+   "images_per_sec": 72.93,
+   "preprocess_sec_per_1000": 4.038,
+   "gpu_sec_per_1000": 9.746,
+   "peak_vram_mb": 1714.7,
+   "peak_vram_reserved_mb": 1780.0,
+   "model_params": 303129600,
+   "model_size_mb": 1156.3,
+   "embed_dim": 1024,
+   "embedding_bytes": 4096,
+   "gallery_60k_mb": 234.4,
+   "timestamp": "2026-11-02T13:42:48",
+   "label": "GR-Lite",
+   "measured": true,
+   "is_baseline": false,
+   "speed_ratio": 1.431763600292367,
+   "gpu_ratio": 2.3776530861185656,
+   "accuracy": {
+    "real_studio_flat": {
+     "coarse_recall@1": 0.6588,
+     "coarse_recall@10": 0.8635,
+     "fine_recall@1": 0.3116,
+     "fine_recall@10": 0.4975,
+     "coarse_map@10": 0.3345,
+     "fine_map@10": 0.2129
+    },
+    "real_streetlook": {
+     "coarse_recall@1": 0.4526,
+     "coarse_recall@10": 0.7034,
+     "fine_recall@1": 0.1916,
+     "fine_recall@10": 0.3486,
+     "coarse_map@10": 0.1697,
+     "fine_map@10": 0.135
+    },
+    "aigen_studio": {
+     "coarse_recall@1": 0.3938,
+     "coarse_recall@10": 0.715,
+     "fine_recall@1": 0.1451,
+     "fine_recall@10": 0.3679,
+     "coarse_map@10": 0.173,
+     "fine_map@10": 0.0709
+    },
+    "aigen_streetlook": {
+     "coarse_recall@1": 0.3937,
+     "coarse_recall@10": 0.6562,
+     "fine_recall@1": 0.15,
+     "fine_recall@10": 0.3688,
+     "coarse_map@10": 0.1791,
+     "fine_map@10": 0.1137
+    }
+   }
+  },
+  {
+   "model": "dinov2_vitb14",
+   "model_metadata": {
+    "hf_id": "facebook/dinov2-base",
+    "revision": "f9e44c814b77203eaa57a6bdbbd535f21ede1415",
+    "pooling": "cls"
+   },
+   "device": "cuda",
+   "gpu": "NVIDIA GeForce RTX 4090",
+   "torch": "2.14.0+cu130",
+   "dataset": "lookbench",
+   "config": "real_studio_flat",
+   "split": "query",
+   "n_images": 200,
+   "batch_size": 16,
+   "input_shape": [
+    3,
+    224,
+    224
+   ],
+   "repeats": 3,
+   "sec_per_1000": 10.916,
+   "images_per_sec": 91.61,
+   "preprocess_sec_per_1000": 9.807,
+   "gpu_sec_per_1000": 1.561,
+   "peak_vram_mb": 517.0,
+   "peak_vram_reserved_mb": 630.0,
+   "model_params": 86580480,
+   "model_size_mb": 330.3,
+   "embed_dim": 768,
+   "embedding_bytes": 3072,
+   "gallery_60k_mb": 175.8,
+   "timestamp": "2026-11-02T13:43:20",
+   "label": "DINOv2 ViT-B/14",
+   "measured": true,
+   "is_baseline": false,
+   "speed_ratio": 1.1398141380390518,
+   "gpu_ratio": 0.38082459136374724,
+   "accuracy": {
+    "real_studio_flat": {
+     "coarse_recall@1": 0.7784,
+     "coarse_recall@10": 0.8961,
+     "fine_recall@1": 0.3323,
+     "fine_recall@10": 0.5401,
+     "coarse_map@10": 0.5375,
+     "fine_map@10": 0.241
+    },
+    "real_streetlook": {
+     "coarse_recall@1": 0.528,
+     "coarse_recall@10": 0.7635,
+     "fine_recall@1": 0.1713,
+     "fine_recall@10": 0.3394,
+     "coarse_map@10": 0.2765,
+     "fine_map@10": 0.1246
+    },
+    "aigen_studio": {
+     "coarse_recall@1": 0.5751,
+     "coarse_recall@10": 0.8601,
+     "fine_recall@1": 0.1606,
+     "fine_recall@10": 0.3834,
+     "coarse_map@10": 0.364,
+     "fine_map@10": 0.1206
+    },
+    "aigen_streetlook": {
+     "coarse_recall@1": 0.525,
+     "coarse_recall@10": 0.7375,
+     "fine_recall@1": 0.2,
+     "fine_recall@10": 0.3875,
+     "coarse_map@10": 0.2799,
+     "fine_map@10": 0.1527
+    }
+   }
+  },
+  {
+   "model": "bge_vl_large",
+   "model_metadata": {
+    "hf_id": "BAAI/BGE-VL-large",
+    "revision": "40fb48217f521df22a2a5bf15edd52ed1146ef05",
+    "pooling": "clip_visual_projection",
+    "encode_mode": "image_only",
+    "loaded_as": "transformers.CLIPModel"
+   },
+   "device": "cuda",
+   "gpu": "NVIDIA GeForce RTX 4090",
+   "torch": "2.14.0+cu130",
+   "dataset": "lookbench",
+   "config": "real_studio_flat",
+   "split": "query",
+   "n_images": 200,
+   "batch_size": 16,
+   "input_shape": [
+    3,
+    224,
+    224
+   ],
+   "repeats": 3,
+   "sec_per_1000": 13.878,
+   "images_per_sec": 72.06,
+   "preprocess_sec_per_1000": 8.618,
+   "gpu_sec_per_1000": 5.304,
+   "peak_vram_mb": 1905.8,
+   "peak_vram_reserved_mb": 2038.0,
+   "model_params": 427616513,
+   "model_size_mb": 1631.2,
+   "embed_dim": 768,
+   "embedding_bytes": 3072,
+   "gallery_60k_mb": 175.8,
+   "timestamp": "2026-11-02T14:09:19",
+   "label": "BGE-VL-Large",
+   "measured": true,
+   "is_baseline": false,
+   "speed_ratio": 1.4490967944032578,
+   "gpu_ratio": 1.2939741400341547,
+   "accuracy": {
+    "real_studio_flat": {
+     "coarse_recall@1": 0.8358,
+     "coarse_recall@10": 0.9288,
+     "fine_recall@1": 0.3858,
+     "fine_recall@10": 0.5974,
+     "coarse_map@10": 0.5957,
+     "fine_map@10": 0.2878
+    }
+   }
+  }
+ ]
+}

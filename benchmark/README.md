@@ -123,6 +123,32 @@ python -m benchmark.profile_perf --model <이름>                     # 속도 +
 > `streamlit`은 루트 `requirements.txt`에 있습니다. benchmark만 설치했다면
 > `pip install streamlit`로 따로 넣으세요.
 
+### 정적 사이트로 내보내기 (GitHub Pages)
+
+Streamlit 뷰어는 서버가 필요합니다. 교내망에서는 방화벽·기기 격리 때문에
+팀원 PC에서 안 열리는 경우가 많습니다. 그럴 때는 **미리 뽑은 쿼리들의 결과를
+통째로 구워** 정적 페이지로 띄웁니다. 서버가 없으니 링크만 주면 누구나 봅니다.
+
+```bash
+python -m benchmark.viewer.export_static              # docs/ 생성 (서브셋당 쿼리 50개)
+python -m benchmark.viewer.export_static --queries 80 --thumb 180
+python -m http.server -d docs 8000                    # 올리기 전 로컬 확인
+```
+
+- 쿼리 선택은 기본이 `mixed`입니다. 절반은 **모델 간 결과가 갈리는 쿼리**(비교할
+  거리가 많음), 절반은 무작위(전반적인 성능이 왜곡되지 않게)로 채웁니다.
+- 썸네일은 (출처 서브셋, 행 번호)로 이름을 지어 모델·쿼리·서브셋 간에 **공유**
+  합니다. noise 풀 이미지는 어느 서브셋에서든 파일 하나만 씁니다.
+- 요약표의 정확도는 뽑은 쿼리가 아니라 **서브셋 전체 평균**입니다.
+- 쿼리 50개 × 4개 서브셋 × 5개 모델 기준 약 17MB입니다.
+
+**Pages 켜는 법**: 이 브랜치를 `main`에 머지한 뒤, GitHub 저장소 →
+Settings → Pages → Source를 `main` / `/docs`로 지정하면
+`https://mjiw.github.io/aisum4/` 에 뜹니다.
+
+> 배포본에는 「브랜치에서 모델 가져오기」가 없습니다. 모델을 새로 돌리는 건
+> GPU가 있는 PC에서 하고, 끝나면 `export_static`을 다시 돌려 커밋하면 됩니다.
+
 ### 다른 기기에서 접속하기
 
 내 PC 밖에서 열려면 두 가지가 필요합니다.
@@ -166,6 +192,7 @@ New-NetFirewallRule -DisplayName "Streamlit viewer" -Direction Inbound `
 | `viewer/app.py` | 검색 결과 비교 Web GUI (Streamlit). 캐시된 임베딩만 사용 |
 | `viewer/core.py` | 뷰어용 검색·판정·이미지 조회. 갤러리 인덱스 ↔ 원본 이미지 대응 |
 | `viewer/remote.py` | 원격 브랜치 모델을 임시 워크트리에서 실행 (체크아웃 불필요) |
+| `viewer/export_static.py` | 뷰어를 정적 사이트로 내보내기 → `docs/` (GitHub Pages) |
 | `probe_schema.py` | 데이터셋 실제 스키마 확인용 일회성 스크립트 |
 
 인코딩 → 검색 → 판정 → 집계 4단계이고, 임베딩이 캐시되므로

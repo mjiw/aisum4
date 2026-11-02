@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>임베딩 모델 검색 결과 비교</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>임베딩 모델 검색 결과 비교</h1>
+    <p class="sub">DreamSim을 기준으로, 같은 쿼리를 모델별로 어떻게 찾는지 나란히 봅니다.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel">
+    <h2>모델 요약</h2>
+    <div class="scroll"><table id="summary"></table></div>
+    <p class="note" id="summary-note"></p>
+  </section>
+
+  <section class="panel">
+    <div class="controls">
+      <label>서브셋
+        <select id="subset"></select>
+      </label>
+      <label>정답 기준
+        <select id="criterion">
+          <option value="coarse">coarse — 같은 카테고리</option>
+          <option value="fine">fine — 카테고리 + 속성</option>
+        </select>
+      </label>
+      <label>쿼리
+        <select id="query"></select>
+      </label>
+      <span class="btns">
+        <button id="prev" type="button">이전</button>
+        <button id="next" type="button">다음</button>
+        <button id="rand" type="button">무작위</button>
+      </span>
+    </div>
+
+    <div class="query-card">
+      <img id="q-img" alt="쿼리 이미지">
+      <dl id="q-meta"></dl>
+    </div>
+  </section>
+
+  <section id="results"></section>
+
+  <p class="note">
+    테두리가 초록색이면 현재 기준으로 정답입니다. 숫자는 코사인 유사도이고,
+    캡션은 갤러리 아이템의 카테고리입니다. <code>noise</code>는 공용 distractor
+    풀에서 온 이미지입니다.
+  </p>
+  <p class="note" id="footer-note"></p>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

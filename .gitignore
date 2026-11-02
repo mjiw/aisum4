@@ -43,3 +43,7 @@ benchmark/.gpu.lock
 
 # Streamlit 비밀값 (비밀번호 등)
 .streamlit/secrets.toml
+
+# 단, 정적 사이트(GitHub Pages)의 썸네일은 커밋한다 (위 *.jpg 규칙의 예외).
+# export_static.py가 만든 결과물이며, 이게 없으면 배포된 페이지가 빈 칸이 된다.
+!docs/img/**/*.jpg
