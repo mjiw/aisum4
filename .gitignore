@@ -34,6 +34,9 @@ token.txt
 benchmark/.embed_cache/
 benchmark/.hf_cache/
 
+# GPU 직렬화 락 (실행 중에만 존재하는 런타임 파일)
+benchmark/.gpu.lock
+
 # 단, 평가 결과 JSON은 팀 공유용이므로 커밋한다 (위 results/ 규칙의 예외)
 !benchmark/results/
 !benchmark/results/*.json

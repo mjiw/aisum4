@@ -1,0 +1,37 @@
+{
+  "model": "dreamsim",
+  "model_metadata": {
+    "dreamsim_type": "ensemble"
+  },
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "torch": "2.14.0+cu130",
+  "dataset": "lookbench",
+  "config": "real_studio_flat",
+  "split": "query",
+  "n_images": 200,
+  "batch_size": 16,
+  "input_shape": [
+    3,
+    224,
+    224
+  ],
+  "repeats": 3,
+  "runs_sec": [
+    1.9446,
+    1.9036,
+    1.9154
+  ],
+  "sec_per_1000": 9.577,
+  "images_per_sec": 104.42,
+  "preprocess_sec_per_1000": 5.199,
+  "gpu_sec_per_1000": 4.099,
+  "peak_vram_mb": 1236.2,
+  "peak_vram_reserved_mb": 1446.0,
+  "model_params": 265990656,
+  "model_size_mb": 1014.7,
+  "embed_dim": 1792,
+  "embedding_bytes": 7168,
+  "gallery_60k_mb": 410.2,
+  "timestamp": "2026-11-02T13:42:21"
+}

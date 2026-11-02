@@ -1,0 +1,41 @@
+{
+  "model": "unicom_vitl14",
+  "model_metadata": {
+    "source": "github.com/deepglint/unicom",
+    "variant": "ViT-L/14",
+    "checkpoint": "FP16-ViT-L-14.pt",
+    "pooling": "flatten+bn_head",
+    "image_size": 224
+  },
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "torch": "2.14.0+cu130",
+  "dataset": "lookbench",
+  "config": "real_studio_flat",
+  "split": "query",
+  "n_images": 200,
+  "batch_size": 16,
+  "input_shape": [
+    3,
+    224,
+    224
+  ],
+  "repeats": 3,
+  "runs_sec": [
+    1.5554,
+    1.5046,
+    1.4501
+  ],
+  "sec_per_1000": 7.523,
+  "images_per_sec": 132.92,
+  "preprocess_sec_per_1000": 5.512,
+  "gpu_sec_per_1000": 1.834,
+  "peak_vram_mb": 2330.3,
+  "peak_vram_reserved_mb": 2380.0,
+  "model_params": 572328448,
+  "model_size_mb": 2183.3,
+  "embed_dim": 768,
+  "embedding_bytes": 3072,
+  "gallery_60k_mb": 175.8,
+  "timestamp": "2026-11-02T13:46:47"
+}

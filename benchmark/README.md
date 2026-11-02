@@ -39,6 +39,90 @@ python -m benchmark.compare
 python -m benchmark.compare --config real_studio_flat --sort-by fine_recall@1 --csv compare.csv
 ```
 
+## 속도 · 메모리 측정
+
+현업 투입 판단에는 정확도만으로 부족합니다. 1,000장을 몇 초에 처리하는지,
+VRAM을 얼마나 먹는지를 같은 조건에서 재서 `results/perf__{model}.json`에 남깁니다.
+
+```bash
+python -m benchmark.profile_perf --model dreamsim
+python -m benchmark.profile_perf --model unicom_vitl14
+```
+
+같은 이미지(기본: real_studio_flat 쿼리 200장), 같은 배치로 재야 비교가 됩니다.
+기본값을 바꿨다면 모든 모델을 같은 옵션으로 다시 재세요. 뷰어가 조건이 다르면
+경고를 띄웁니다.
+
+> **절대 시간은 머신 상태에 따라 흔들립니다.** 같은 모델이 다른 날 2배 차이로
+> 나오기도 합니다. 시트에는 DreamSim=1 기준 **배수**를 적는 편이 안전합니다.
+> 배수는 같은 실행 안에서 재면 재현성이 높습니다(GR-Lite GPU 기준 2.37~2.44).
+
+## 검색 결과 비교 뷰어 (Web GUI)
+
+숫자만으로는 모델이 **무엇을** 끌어오는지 알 수 없습니다. Recall@1이 같아도
+2~10위에 들어오는 상품은 모델마다 전혀 다릅니다. 뷰어는 같은 쿼리에 대해
+DreamSim(현행 파이프라인 기준선)을 맨 위에 두고 그 아래에 다른 모델을 나란히
+보여줍니다.
+
+```bash
+streamlit run benchmark/viewer/app.py
+```
+
+- **맨 위에 요약표**가 있습니다. 모델별 정확도(R@1 / R@10 / mAP@10)와
+  속도(1,000장당 초, DreamSim=1 배수, 초당 장수), 메모리(최대 VRAM, 모델 크기,
+  임베딩 차원, 6만 장 인덱스 크기)를 한 줄에 모았습니다.
+- **GPU가 필요 없습니다.** `.embed_cache/`에 있는 임베딩만 읽어 행렬곱으로
+  검색합니다. 쿼리를 바꿔도 즉시 나옵니다.
+- **평가를 한 번 돌린 모델만 보입니다.** 캐시가 없는 모델은 목록에 뜨지 않고,
+  사이드바에 만드는 명령이 안내됩니다.
+- 요약표의 정확도는 `results/*.json`이 아니라 **캐시에서 직접 계산**합니다.
+  모델마다 브랜치가 달라 결과 JSON은 한 브랜치에 다 모이지 않지만, 캐시는
+  git이 추적하지 않아 로컬에 쌓이기 때문입니다. 어느 브랜치에서 켜도 돌려본
+  모델이 전부 보입니다.
+
+### 브랜치에서 모델 가져오기
+
+사이드바의 **「브랜치에서 모델 가져오기」**를 쓰면 팀원 브랜치의 모델을
+**체크아웃 없이** 바로 돌릴 수 있습니다. 지금 작업 중인 브랜치와 수정 중인
+파일은 그대로 둡니다.
+
+- 목록에는 **그 브랜치가 새로 들고 온 모델만** 뜹니다. 브랜치를 서로 머지해서
+  쌓다 보니 거의 모든 브랜치에 기준선(dreamsim/dinov2/dinov3)이 들어 있는데,
+  로컬 `config.json`에 이미 있는 모델은 워크트리 없이 그냥 돌리면 되므로 뺍니다.
+- 한 모델이 여러 브랜치에 있으면 이름이 가장 가까운 브랜치만 남깁니다.
+- 동작 방식: `git worktree`로 그 브랜치를 임시 폴더에 펼치고, config의 경로만
+  본 저장소 쪽으로 돌린 뒤(캐시·결과·모델 가중치를 공유) 거기서 평가를 돌리고
+  워크트리를 지웁니다. 속도 측정 코드(`profile_perf.py`)는 **이쪽 버전**을
+  복사해 넣어 모델끼리 같은 기준으로 잽니다.
+- 갤러리 6만 장을 처음 인코딩하는 모델은 10~25분 걸립니다. 창을 닫아도 작업은
+  계속되고, 끝난 뒤 새로고침하면 표에 들어옵니다.
+- CLI로도 같은 일을 할 수 있습니다:
+
+```bash
+python -m benchmark.viewer.remote --branch test/zooclaw-fashionsiglip2 \
+    --model zooclaw_fashionsiglip2 --configs real_studio_flat,real_streetlook
+```
+
+> 남의 브랜치 코드를 그대로 실행합니다. 같은 팀 저장소라는 전제에서 쓰세요.
+
+**새 모델을 직접 추가할 때** 뷰어 코드는 손대지 않습니다. 모델 목록도 표도
+파일을 보고 스스로 채웁니다. 아래 두 개만 돌리면 됩니다.
+
+```bash
+python -m benchmark.run_eval     --model <이름> --config <서브셋>   # 캐시 + 정확도
+python -m benchmark.profile_perf --model <이름>                     # 속도 + 메모리
+```
+
+보기 좋은 한글 라벨을 달고 싶으면 `viewer/core.py`의 `KNOWN_LABELS`에 한 줄
+추가하세요. 안 해도 모델 키가 그대로 라벨로 쓰입니다.
+- 테두리 초록색 = 현재 기준(coarse/fine)으로 정답. 캡션의 숫자는 코사인
+  유사도이고, `noise`는 공용 distractor 풀에서 온 이미지입니다.
+- 모델 줄마다 이 쿼리 한 건의 R@1 / R@10 / mAP@10과, 기준 모델 대비 mAP 차이,
+  기준 모델과 겹친 결과 수가 함께 표시됩니다.
+
+> `streamlit`은 루트 `requirements.txt`에 있습니다. benchmark만 설치했다면
+> `pip install streamlit`로 따로 넣으세요.
+
 ## 구조
 
 | 파일 | 역할 |
@@ -52,6 +136,10 @@ python -m benchmark.compare --config real_studio_flat --sort-by fine_recall@1 --
 | `metrics.py` | Recall@K / mAP@K 집계 |
 | `run_eval.py` | CLI 진입점 |
 | `compare.py` | `results/*.json`을 모아 모델 비교표 출력 |
+| `profile_perf.py` | 모델별 속도·메모리 측정 → `results/perf__{model}.json` |
+| `viewer/app.py` | 검색 결과 비교 Web GUI (Streamlit). 캐시된 임베딩만 사용 |
+| `viewer/core.py` | 뷰어용 검색·판정·이미지 조회. 갤러리 인덱스 ↔ 원본 이미지 대응 |
+| `viewer/remote.py` | 원격 브랜치 모델을 임시 워크트리에서 실행 (체크아웃 불필요) |
 | `probe_schema.py` | 데이터셋 실제 스키마 확인용 일회성 스크립트 |
 
 인코딩 → 검색 → 판정 → 집계 4단계이고, 임베딩이 캐시되므로
