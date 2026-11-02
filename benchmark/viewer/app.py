@@ -18,11 +18,14 @@ GPU가 필요 없다. `.embed_cache/`에 있는 임베딩만 읽어 행렬곱으
 """
 
 import base64
+import hmac
 import io
+import os
 import random
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -36,6 +39,39 @@ from benchmark.viewer import core, remote
 
 THUMB_PX = 150
 st.set_page_config(page_title="검색 결과 비교", layout="wide")
+
+
+def require_password():
+    """VIEWER_PASSWORD가 설정돼 있을 때만 잠근다 (없으면 로컬용으로 그냥 열린다).
+
+    이 앱은 버튼 하나로 팀원 브랜치의 코드를 실행하고 GPU 작업을 돌린다.
+    연구실 밖에 열어둘 거면 반드시 비밀번호를 걸어야 한다. 다만 이건 얇은 문이다
+    — Streamlit에는 시도 횟수 제한이 없다. 인터넷에 통째로 여는 대신
+    Tailscale Funnel처럼 앞단에서 한 번 더 막는 방법과 같이 쓰는 걸 권한다.
+    """
+    secret = os.environ.get("VIEWER_PASSWORD", "")
+    if not secret:
+        try:                                        # secrets.toml이 없으면 예외가 난다
+            secret = st.secrets.get("viewer_password", "")
+        except Exception:
+            secret = ""
+    if not secret:
+        return
+    if st.session_state.get("authed"):
+        return
+
+    st.title("검색 결과 비교")
+    typed = st.text_input("비밀번호", type="password")
+    if typed:
+        if hmac.compare_digest(typed, secret):      # 타이밍 공격 방지
+            st.session_state.authed = True
+            st.rerun()
+        time.sleep(1)                               # 무차별 대입 속도를 늦춘다
+        st.error("비밀번호가 맞지 않습니다.")
+    st.stop()
+
+
+require_password()
 
 CSS = """
 <style>

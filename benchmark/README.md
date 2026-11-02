@@ -123,6 +123,32 @@ python -m benchmark.profile_perf --model <이름>                     # 속도 +
 > `streamlit`은 루트 `requirements.txt`에 있습니다. benchmark만 설치했다면
 > `pip install streamlit`로 따로 넣으세요.
 
+### 다른 기기에서 접속하기
+
+내 PC 밖에서 열려면 두 가지가 필요합니다.
+
+**1. 비밀번호.** `VIEWER_PASSWORD`가 설정돼 있으면 잠깁니다. 없으면 그냥 열립니다.
+
+```bash
+VIEWER_PASSWORD='긴-비밀번호' streamlit run benchmark/viewer/app.py
+# Windows PowerShell: $env:VIEWER_PASSWORD='긴-비밀번호'; streamlit run ...
+```
+
+**2. 방화벽.** 윈도우는 기본적으로 외부 접속을 막습니다. 관리자 PowerShell에서
+**접속을 허용할 대역만** 열어주세요(연구실 대역과 Tailscale 예시).
+
+```powershell
+New-NetFirewallRule -DisplayName "Streamlit viewer" -Direction Inbound `
+  -Protocol TCP -LocalPort 8501 -Action Allow -Profile Any `
+  -RemoteAddress 192.168.0.0/16, 100.64.0.0/10
+# 되돌리기: Remove-NetFirewallRule -DisplayName "Streamlit viewer"
+```
+
+> **포트를 인터넷 전체에 열지 마세요.** 이 뷰어는 버튼 하나로 팀원 브랜치의
+> 코드를 받아 실행하고 GPU 작업을 돌립니다. 비밀번호는 시도 횟수 제한이 없는
+> 얇은 문입니다. 밖에서 써야 한다면 포트를 직접 여는 대신 Tailscale Funnel이나
+> Cloudflare Tunnel처럼 앞단에서 한 번 더 막는 방법을 쓰세요.
+
 ## 구조
 
 | 파일 | 역할 |
