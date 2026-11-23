@@ -1,0 +1,100 @@
+{
+  "_comment": "비교 대상 모델 목록. 순서가 곧 화면 순서다. baseline은 항상 맨 위에 고정된다. branch는 origin의 브랜치 이름이며, 워커가 그 브랜치를 임시 워크트리로 펼쳐 브랜치 코드 그대로 임베딩을 만든다. adapter가 있는 모델은 브랜치가 benchmark/ 프레임워크를 쓰지 않아 host_branch 위에 그 브랜치의 모델 코드를 얹어 돌린다.",
+  "baseline": "dreamsim",
+  "host_branch": "feat/benchmark-viewer",
+  "dataset": "lookbench",
+  "subsets": ["real_studio_flat", "real_streetlook", "aigen_studio", "aigen_streetlook"],
+  "models": [
+    {
+      "key": "dreamsim",
+      "label": "DreamSim",
+      "branch": "feat/benchmark-viewer",
+      "note": "현행 search 파이프라인이 쓰는 모델 (비교 기준)",
+      "links": {"code": "https://github.com/ssundaram21/dreamsim"}
+    },
+    {
+      "key": "tianmu_mere",
+      "label": "Tianmu-MERE",
+      "branch": "test/tianmu-mere",
+      "note": "코드 포함 모델이 HF에 공개 (GitHub 없음)",
+      "links": {
+        "hf": "https://huggingface.co/TianmuLab/Tianmu-MERE",
+        "bench": "https://serendipityoneinc.github.io/look-bench-page/"
+      }
+    },
+    {
+      "key": "zooclaw_fashionsiglip2",
+      "label": "ZooClaw-FashionSigLIP2",
+      "branch": "test/zooclaw-fashionsiglip2",
+      "links": {
+        "paper": "https://arxiv.org/abs/2606.27708",
+        "hf": "https://huggingface.co/srpone/zooclaw-fashionsiglip2"
+      }
+    },
+    {
+      "key": "tipsv2_l14",
+      "label": "TIPSv2-L/14",
+      "branch": "test/tipsv2-l-14",
+      "adapter": "tipsv2",
+      "adapter_config": {
+        "model_id": "google/tipsv2-l14",
+        "revision": "52847a71eb02a3082c370fbcd98cd799687bd4d0",
+        "image_size": 448,
+        "batch_size": 16,
+        "cache_dir": "./model_cache/tipsv2"
+      },
+      "note": "브랜치가 embedding/ 구조라 모델 코드만 가져와 같은 평가 틀에서 돌린다",
+      "links": {
+        "code": "https://github.com/google-deepmind/tips",
+        "hf": "https://huggingface.co/google/tipsv2-l14"
+      }
+    },
+    {
+      "key": "pe_core_l14_336",
+      "label": "PE-Core-L14-336",
+      "branch": "test/pe-core",
+      "links": {
+        "paper": "https://arxiv.org/abs/2504.13181",
+        "code": "https://github.com/facebookresearch/perception_models",
+        "hf": "https://huggingface.co/facebook/PE-Core-L14-336"
+      }
+    },
+    {
+      "key": "moda_fashion_crossdomain",
+      "label": "MODA-Fashion-CrossDomain",
+      "branch": "test/moda-fashion-crossdomain",
+      "note": "논문 없음. Hopit AI가 모델·벤치마크를 소프트웨어로 공개",
+      "links": {
+        "code": "https://github.com/hopit-ai/Moda",
+        "blog": "https://hopitai.substack.com/p/moda-series-finale"
+      }
+    },
+    {
+      "key": "unicom_vitl14",
+      "label": "UNICOM ViT-L/14",
+      "branch": "test/unicom",
+      "links": {
+        "paper": "https://arxiv.org/pdf/2304.05884",
+        "code": "https://github.com/deepglint/unicom"
+      }
+    },
+    {
+      "key": "qwen3_vl_embedding_2b",
+      "label": "Qwen3-VL-Embedding-2B",
+      "branch": "test/qwen3-vl-embedding",
+      "links": {"hf": "https://huggingface.co/Qwen/Qwen3-VL-Embedding-2B"}
+    },
+    {
+      "key": "wemm_embedding_2b",
+      "label": "WeMM-Embedding-2B",
+      "branch": "test/wemm-embedding",
+      "links": {"hf": "https://huggingface.co/tencent/WeMM-Embedding-2B"}
+    },
+    {
+      "key": "mcip_so400m_14_384",
+      "label": "MCIP ViT-SO400M-14-384",
+      "branch": "test/mcip",
+      "links": {"hf": "https://huggingface.co/Visual-Computing-Group/MCIP-ViT-SO400M-14-SigLIP-384"}
+    }
+  ]
+}

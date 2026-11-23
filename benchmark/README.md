@@ -57,123 +57,111 @@ python -m benchmark.profile_perf --model unicom_vitl14
 > 나오기도 합니다. 시트에는 DreamSim=1 기준 **배수**를 적는 편이 안전합니다.
 > 배수는 같은 실행 안에서 재면 재현성이 높습니다(GR-Lite GPU 기준 2.37~2.44).
 
-## 검색 결과 비교 뷰어 (Web GUI)
+## 모델 비교 사이트 (Web GUI)
 
-숫자만으로는 모델이 **무엇을** 끌어오는지 알 수 없습니다. Recall@1이 같아도
-2~10위에 들어오는 상품은 모델마다 전혀 다릅니다. 뷰어는 같은 쿼리에 대해
-DreamSim(현행 파이프라인 기준선)을 맨 위에 두고 그 아래에 다른 모델을 나란히
-보여줍니다.
+LookBench 테스트 이미지로 **실제 검색 결과**를 보고 DreamSim(현행 파이프라인)과
+비교하는 페이지입니다. 링크만 있으면 GPU·설치 없이 열립니다.
+
+- **성능 요약**: 정확도(R@1 / R@10 / mAP@10, DreamSim 대비 %p와 쿼리별 승·무·패),
+  속도·자원(1000장 처리 시간, 쿼리 1장 지연, 이미지 토큰 수, VRAM, 파라미터,
+  모델 크기, 차원, 6만 장 인덱스 크기, 로딩 시간). 열 제목을 누르면 정렬됩니다.
+- **검색 결과**: DreamSim을 맨 위에 고정하고 고른 모델을 아래에 나란히 놓습니다.
+  같은 순위가 세로로 맞물려 바로 비교되고, 정답은 초록 테두리, DreamSim도 찾은
+  이미지는 `D3`(DreamSim 3위)처럼 표시됩니다. 화면 상태가 주소에 담겨 링크로 공유됩니다.
+
+비교 대상은 `benchmark/compute/lineup.json`에 있습니다(모델 키·이름·브랜치·링크,
+순서 = 화면 순서). 만드는 과정은 세 단계이고 GPU는 1단계에만 필요합니다.
+
+```bash
+python -m benchmark.compute status                  # 무엇이 준비됐는지
+python -m benchmark.compute run --models all        # 1) GPU: 빠진 것만 돌린다
+python -m benchmark.viewer.export_static            # 2) site/ 굽기 (GPU 불필요)
+python -m benchmark.viewer.deploy                   # 3) GitHub Pages로 올리기
+```
+
+**1단계(워커)가 하는 일.** 모델마다 그 브랜치를 임시 워크트리로 펼쳐 **브랜치 코드
+그대로** 임베딩을 만들고(`run_eval`), 결과를 쿼리별 top-10·정답 여부·AP로 압축해
+`results/retrieval/{model}__lookbench-{subset}.npz`(수십 KB)에 남깁니다. 속도는
+이쪽 `profile_perf.py`를 덮어씌워 모든 모델을 같은 방식으로 잽니다.
+정답 판정·집계는 **이 브랜치의 `relevance.py`/`metrics.py`로 모든 모델에 똑같이**
+합니다(브랜치마다 metrics.py 버전이 달라 그대로 모으면 잣대가 섞입니다). 그래서
+사이트 숫자는 각 브랜치가 남긴 JSON과 소수점 아래가 조금 다를 수 있습니다.
+TIPSv2처럼 `benchmark/` 틀을 쓰지 않는 브랜치는 어댑터(`compute/adapters.py`)가
+모델 코드만 가져와 같은 틀에 얹습니다.
+
+### GPU 바꾸기
+
+워커를 어디서 돌릴지는 `benchmark/compute/gpu.json`의 백엔드가 정합니다.
+머신마다 다른 값은 `gpu.local.json`(git 제외)에 덮어씁니다.
+
+```jsonc
+// benchmark/compute/gpu.local.json — 예시
+{
+  "default": "lab",                       // 기본 백엔드를 바꾸고 싶을 때
+  "backends": {
+    "local": { "python": "C:/Users/me/venvs/aisum4-bench/Scripts/python.exe" },
+    "lab":   { "type": "ssh", "host": "me@gpu.lab.ac.kr", "port": 22,
+               "repo_dir": "~/aisum4", "python": "~/venvs/bench/bin/python" }
+  }
+}
+```
+
+```bash
+python -m benchmark.compute gpu --gpu lab           # 연결·GPU 확인
+python -m benchmark.compute run --models all --gpu lab
+AISUM_GPU=lab python -m benchmark.compute run       # 환경변수로 골라도 된다
+```
+
+- `local`: 이 PC의 GPU에서 워커를 하위 프로세스로 돌립니다.
+- `ssh`: 원격 머신에서 `git fetch` → `ref` 체크아웃 → 워커 실행 후, 결과 파일
+  (`retrieval/*.npz`, `perf__*.json`, 결과 JSON)만 `scp`로 받아옵니다. 원격에는
+  이 저장소 clone과 파이썬 환경이 있어야 하고, **이쪽 변경은 먼저 push** 해야 반영됩니다.
+  원격 clone은 워커 전용으로 두세요(매번 체크아웃합니다).
+- 다른 방식(작업 큐, 클라우드 API 등)은 `compute/backends.py`의 `Backend`를
+  상속해 `run_model`·`check`를 구현하고 `TYPES`에 등록하면 됩니다. 결과 파일
+  규칙만 지키면 사이트 쪽은 그대로입니다.
+
+### 실행 환경
+
+10개 모델을 한 환경에서 돌리려면 transformers 5.x가 필요합니다(WeMM은 5.2 이상).
+팀 기준 환경(`transformers 5.4.0`)에 맞춘 venv를 따로 두는 걸 권합니다.
+
+```bash
+python -m venv ~/venvs/aisum4-bench
+pip install torch==2.14.0 torchvision==0.29.0 --index-url https://download.pytorch.org/whl/cu130
+pip install transformers==5.4.0 datasets==5.0.1 "huggingface_hub>=1.5,<2" dreamsim==0.2.1     open_clip_torch==3.3.0 timm==1.0.29 peft accelerate qwen-vl-utils sentencepiece scipy
+```
+
+### 사이트 굽기 · 배포
+
+- 정확도 요약은 **서브셋 전체 쿼리**로 계산합니다('전체' = 네 서브셋 쿼리 수 가중).
+  이미지까지 보여주는 쿼리는 서브셋당 `--queries`개(기본 50)이며, 절반은 모델 간
+  결과가 갈리는 쿼리, 절반은 무작위입니다.
+- 빌드할 때 결과물의 갤러리 순서를 로컬 데이터셋과 대조합니다. 어긋나면 썸네일이
+  엉뚱한 상품을 가리키므로 멈춥니다.
+- `site/index.html`을 더블클릭해도 열립니다(서버 불필요). `site/`는 git 제외입니다.
+- 배포 대상은 `viewer/deploy.json`의 전용 저장소입니다. 매번 커밋 하나로 덮어써
+  썸네일 이력이 쌓이지 않습니다. 무료 Pages는 공개 페이지(링크를 알면 누구나 열람)라
+  검색엔진 노출만 `noindex`로 막아 두었습니다.
+
+## 로컬 탐색 뷰어 (Streamlit)
+
+라인업에 없는 모델을 잠깐 시험하거나 전체 쿼리를 훑어볼 때 쓰는 로컬 도구입니다.
+`.embed_cache/`의 임베딩을 직접 읽으므로 GPU 없이 즉시 검색합니다.
 
 ```bash
 streamlit run benchmark/viewer/app.py
+python -m benchmark.viewer.remote --branch test/zooclaw-fashionsiglip2     --model zooclaw_fashionsiglip2 --configs real_studio_flat   # 브랜치 모델 돌리기
 ```
 
-- **맨 위에 요약표**가 있습니다. 모델별 정확도(R@1 / R@10 / mAP@10)와
-  속도(1,000장당 초, DreamSim=1 배수, 초당 장수), 메모리(최대 VRAM, 모델 크기,
-  임베딩 차원, 6만 장 인덱스 크기)를 한 줄에 모았습니다.
-- **GPU가 필요 없습니다.** `.embed_cache/`에 있는 임베딩만 읽어 행렬곱으로
-  검색합니다. 쿼리를 바꿔도 즉시 나옵니다.
-- **평가를 한 번 돌린 모델만 보입니다.** 캐시가 없는 모델은 목록에 뜨지 않고,
-  사이드바에 만드는 명령이 안내됩니다.
-- 요약표의 정확도는 `results/*.json`이 아니라 **캐시에서 직접 계산**합니다.
-  모델마다 브랜치가 달라 결과 JSON은 한 브랜치에 다 모이지 않지만, 캐시는
-  git이 추적하지 않아 로컬에 쌓이기 때문입니다. 어느 브랜치에서 켜도 돌려본
-  모델이 전부 보입니다.
-
-### 브랜치에서 모델 가져오기
-
-사이드바의 **「브랜치에서 모델 가져오기」**를 쓰면 팀원 브랜치의 모델을
-**체크아웃 없이** 바로 돌릴 수 있습니다. 지금 작업 중인 브랜치와 수정 중인
-파일은 그대로 둡니다.
-
-- 목록에는 **그 브랜치가 새로 들고 온 모델만** 뜹니다. 브랜치를 서로 머지해서
-  쌓다 보니 거의 모든 브랜치에 기준선(dreamsim/dinov2/dinov3)이 들어 있는데,
-  로컬 `config.json`에 이미 있는 모델은 워크트리 없이 그냥 돌리면 되므로 뺍니다.
-- 한 모델이 여러 브랜치에 있으면 이름이 가장 가까운 브랜치만 남깁니다.
-- 동작 방식: `git worktree`로 그 브랜치를 임시 폴더에 펼치고, config의 경로만
-  본 저장소 쪽으로 돌린 뒤(캐시·결과·모델 가중치를 공유) 거기서 평가를 돌리고
-  워크트리를 지웁니다. 속도 측정 코드(`profile_perf.py`)는 **이쪽 버전**을
-  복사해 넣어 모델끼리 같은 기준으로 잽니다.
-- 갤러리 6만 장을 처음 인코딩하는 모델은 10~25분 걸립니다. 창을 닫아도 작업은
-  계속되고, 끝난 뒤 새로고침하면 표에 들어옵니다.
-- CLI로도 같은 일을 할 수 있습니다:
-
-```bash
-python -m benchmark.viewer.remote --branch test/zooclaw-fashionsiglip2 \
-    --model zooclaw_fashionsiglip2 --configs real_studio_flat,real_streetlook
-```
-
-> 남의 브랜치 코드를 그대로 실행합니다. 같은 팀 저장소라는 전제에서 쓰세요.
-
-**새 모델을 직접 추가할 때** 뷰어 코드는 손대지 않습니다. 모델 목록도 표도
-파일을 보고 스스로 채웁니다. 아래 두 개만 돌리면 됩니다.
-
-```bash
-python -m benchmark.run_eval     --model <이름> --config <서브셋>   # 캐시 + 정확도
-python -m benchmark.profile_perf --model <이름>                     # 속도 + 메모리
-```
-
-보기 좋은 한글 라벨을 달고 싶으면 `viewer/core.py`의 `KNOWN_LABELS`에 한 줄
-추가하세요. 안 해도 모델 키가 그대로 라벨로 쓰입니다.
-- 테두리 초록색 = 현재 기준(coarse/fine)으로 정답. 캡션의 숫자는 코사인
-  유사도이고, `noise`는 공용 distractor 풀에서 온 이미지입니다.
-- 모델 줄마다 이 쿼리 한 건의 R@1 / R@10 / mAP@10과, 기준 모델 대비 mAP 차이,
-  기준 모델과 겹친 결과 수가 함께 표시됩니다.
-
-> `streamlit`은 루트 `requirements.txt`에 있습니다. benchmark만 설치했다면
-> `pip install streamlit`로 따로 넣으세요.
-
-### 정적 사이트로 내보내기 (GitHub Pages)
-
-Streamlit 뷰어는 서버가 필요합니다. 교내망에서는 방화벽·기기 격리 때문에
-팀원 PC에서 안 열리는 경우가 많습니다. 그럴 때는 **미리 뽑은 쿼리들의 결과를
-통째로 구워** 정적 페이지로 띄웁니다. 서버가 없으니 링크만 주면 누구나 봅니다.
-
-```bash
-python -m benchmark.viewer.export_static              # docs/ 생성 (서브셋당 쿼리 50개)
-python -m benchmark.viewer.export_static --queries 80 --thumb 180
-python -m http.server -d docs 8000                    # 올리기 전 로컬 확인
-```
-
-- 쿼리 선택은 기본이 `mixed`입니다. 절반은 **모델 간 결과가 갈리는 쿼리**(비교할
-  거리가 많음), 절반은 무작위(전반적인 성능이 왜곡되지 않게)로 채웁니다.
-- 썸네일은 (출처 서브셋, 행 번호)로 이름을 지어 모델·쿼리·서브셋 간에 **공유**
-  합니다. noise 풀 이미지는 어느 서브셋에서든 파일 하나만 씁니다.
-- 요약표의 정확도는 뽑은 쿼리가 아니라 **서브셋 전체 평균**입니다.
-- 쿼리 50개 × 4개 서브셋 × 5개 모델 기준 약 17MB입니다.
-
-**Pages 켜는 법**: 이 브랜치를 `main`에 머지한 뒤, GitHub 저장소 →
-Settings → Pages → Source를 `main` / `/docs`로 지정하면
-`https://mjiw.github.io/aisum4/` 에 뜹니다.
-
-> 배포본에는 「브랜치에서 모델 가져오기」가 없습니다. 모델을 새로 돌리는 건
-> GPU가 있는 PC에서 하고, 끝나면 `export_static`을 다시 돌려 커밋하면 됩니다.
-
-### 다른 기기에서 접속하기
-
-내 PC 밖에서 열려면 두 가지가 필요합니다.
-
-**1. 비밀번호.** `VIEWER_PASSWORD`가 설정돼 있으면 잠깁니다. 없으면 그냥 열립니다.
+사이드바의 「브랜치에서 모델 가져오기」는 위 `remote` 명령과 같습니다(체크아웃
+불필요, 남의 브랜치 코드를 그대로 실행하므로 같은 팀 저장소 전제).
+다른 기기에서 열려면 `VIEWER_PASSWORD`로 잠그고, 방화벽은 허용할 대역만 여세요.
+**포트를 인터넷 전체에 열지 마세요** — 버튼 하나로 GPU 작업을 돌리는 앱입니다.
 
 ```bash
 VIEWER_PASSWORD='긴-비밀번호' streamlit run benchmark/viewer/app.py
-# Windows PowerShell: $env:VIEWER_PASSWORD='긴-비밀번호'; streamlit run ...
 ```
-
-**2. 방화벽.** 윈도우는 기본적으로 외부 접속을 막습니다. 관리자 PowerShell에서
-**접속을 허용할 대역만** 열어주세요(연구실 대역과 Tailscale 예시).
-
-```powershell
-New-NetFirewallRule -DisplayName "Streamlit viewer" -Direction Inbound `
-  -Protocol TCP -LocalPort 8501 -Action Allow -Profile Any `
-  -RemoteAddress 192.168.0.0/16, 100.64.0.0/10
-# 되돌리기: Remove-NetFirewallRule -DisplayName "Streamlit viewer"
-```
-
-> **포트를 인터넷 전체에 열지 마세요.** 이 뷰어는 버튼 하나로 팀원 브랜치의
-> 코드를 받아 실행하고 GPU 작업을 돌립니다. 비밀번호는 시도 횟수 제한이 없는
-> 얇은 문입니다. 밖에서 써야 한다면 포트를 직접 여는 대신 Tailscale Funnel이나
-> Cloudflare Tunnel처럼 앞단에서 한 번 더 막는 방법을 쓰세요.
 
 ## 구조
 
@@ -189,10 +177,19 @@ New-NetFirewallRule -DisplayName "Streamlit viewer" -Direction Inbound `
 | `run_eval.py` | CLI 진입점 |
 | `compare.py` | `results/*.json`을 모아 모델 비교표 출력 |
 | `profile_perf.py` | 모델별 속도·메모리 측정 → `results/perf__{model}.json` |
-| `viewer/app.py` | 검색 결과 비교 Web GUI (Streamlit). 캐시된 임베딩만 사용 |
-| `viewer/core.py` | 뷰어용 검색·판정·이미지 조회. 갤러리 인덱스 ↔ 원본 이미지 대응 |
-| `viewer/remote.py` | 원격 브랜치 모델을 임시 워크트리에서 실행 (체크아웃 불필요) |
-| `viewer/export_static.py` | 뷰어를 정적 사이트로 내보내기 → `docs/` (GitHub Pages) |
+| `compute/lineup.json` | 비교 사이트의 모델 라인업 (키·이름·브랜치·링크, 화면 순서) |
+| `compute/gpu.json` | GPU 백엔드 정의 (`gpu.local.json`으로 머신별 덮어쓰기) |
+| `compute/backends.py` | 워커를 어디서 돌릴지 — local / ssh |
+| `compute/worker.py` | GPU 머신에서 브랜치 모델 실행 → 결과물·속도 측정 |
+| `compute/artifacts.py` | 임베딩 캐시 → 쿼리별 top-10·정답·AP 압축 (`results/retrieval/`) |
+| `compute/adapters.py` | `benchmark/` 틀이 아닌 브랜치 모델(TIPSv2)을 같은 틀에 얹기 |
+| `compute/worktree.py` | 브랜치를 임시 워크트리로 펼치기 (체크아웃 불필요) |
+| `viewer/export_static.py` | 결과물 + 테스트 이미지 → 정적 사이트 `site/` |
+| `viewer/web/` | 사이트 화면 (HTML/CSS/JS, 서버 없음) |
+| `viewer/deploy.py` | `site/`를 GitHub Pages 전용 저장소로 배포 |
+| `viewer/app.py` | 로컬 탐색 뷰어 (Streamlit). 캐시된 임베딩만 사용 |
+| `viewer/core.py` | Streamlit 뷰어용 검색·판정·이미지 조회 |
+| `viewer/remote.py` | 라인업 밖 브랜치 모델을 임시 워크트리에서 실행 |
 | `probe_schema.py` | 데이터셋 실제 스키마 확인용 일회성 스크립트 |
 
 인코딩 → 검색 → 판정 → 집계 4단계이고, 임베딩이 캐시되므로

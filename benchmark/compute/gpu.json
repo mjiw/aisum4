@@ -1,0 +1,20 @@
+{
+  "_comment": "GPU 백엔드 정의. 실행할 때 --gpu <이름> 또는 환경변수 AISUM_GPU로 고른다(없으면 default). 머신마다 다른 값(파이썬 경로, 접속 주소)은 같은 폴더의 gpu.local.json에 적는다 — git에 올라가지 않으며 이 파일 위에 덮어써진다.",
+  "default": "local",
+  "backends": {
+    "local": {
+      "type": "local",
+      "python": null,
+      "_python": "null이면 지금 실행 중인 파이썬을 쓴다. 다른 venv를 쓰려면 gpu.local.json에서 경로를 준다."
+    },
+    "remote": {
+      "type": "ssh",
+      "host": "user@gpu-server",
+      "port": 22,
+      "repo_dir": "~/aisum4",
+      "python": "python3",
+      "ref": "origin/feat/benchmark-viewer",
+      "_note": "원격 머신에 이 저장소가 clone돼 있고 파이썬 환경이 준비돼 있어야 한다. 워커는 ref를 체크아웃해 돌린 뒤 결과 파일만 scp로 받아온다. 실제 주소는 gpu.local.json에 적는다."
+    }
+  }
+}

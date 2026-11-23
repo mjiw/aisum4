@@ -1,0 +1,5 @@
+{
+  "repo": "newoceanwave/aisum-model-compare",
+  "branch": "main",
+  "description": "AISUM — 임베딩 모델 검색 비교 (LookBench, DreamSim 기준). benchmark/viewer/deploy.py가 자동으로 올리는 빌드 결과물입니다."
+}

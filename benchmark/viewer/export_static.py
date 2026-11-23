@@ -1,223 +1,328 @@
-"""뷰어를 정적 사이트로 내보낸다 (GitHub Pages용).
+"""비교 뷰어를 정적 사이트로 굽는다 (서버 없이 링크만으로 열리는 페이지).
 
-Streamlit 뷰어는 서버가 필요하다. 연구실 밖에서 보여주려면 PC를 켜 두고 방화벽·
-네트워크까지 맞춰야 하는데, 교내망에서는 그게 잘 안 된다. 그래서 **미리 뽑은
-쿼리들의 검색 결과를 통째로 파일로 구워** 정적 페이지로 띄운다. 서버가 없으니
-링크만 주면 누구나 본다.
+    python -m benchmark.viewer.export_static                  # site/ 생성
+    python -m benchmark.viewer.export_static --queries 80     # 서브셋당 쿼리 수
+    python -m benchmark.viewer.deploy                         # 만든 site/를 배포
 
-    python -m benchmark.viewer.export_static                 # 기본값으로 docs/ 생성
-    python -m benchmark.viewer.export_static --queries 80    # 서브셋당 쿼리 수
+입력은 GPU 워커가 남긴 결과물뿐이다 (GPU·임베딩 캐시 불필요).
 
-쿼리 선택은 기본이 `disagree`다. 모델끼리 결과가 갈리는 쿼리를 우선 뽑는다 —
-다 같은 걸 찾아오는 쿼리를 200개 넣어봐야 비교에 쓸모가 없다.
+    results/retrieval/{model}__lookbench-{subset}.npz   쿼리별 top-10, 정답 여부, AP
+    results/perf__{model}.json                          속도·메모리·토큰
+    LookBench 데이터셋 (로컬 HF 캐시)                     썸네일과 쿼리 정보
 
-썸네일은 (출처 config, 행 번호)로 이름을 지어 모델·쿼리·서브셋 간에 공유한다.
-noise 풀 이미지는 어느 서브셋에서든 같은 파일을 쓴다.
+모델 목록·순서·링크는 benchmark/compute/lineup.json을 따른다. 결과물이 없는
+모델은 표에 '미측정'으로 남고 검색 결과 화면에서는 빠진다.
+
+정확도 요약은 **서브셋의 전체 쿼리**로 계산한다. 이미지까지 보여주는 쿼리는
+서브셋당 --queries개만 고른다(전부 넣으면 썸네일이 수만 장이 된다). 고르는 기준은
+기본이 mixed — 절반은 모델끼리 결과가 크게 갈리는 쿼리, 절반은 무작위다.
 """
 
 import argparse
+import hashlib
 import json
 import shutil
-from collections import Counter
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 
-from benchmark.viewer import core
+from benchmark.compute import REPO, artifacts, load_lineup, results_dir
 
-ROOT = Path(__file__).resolve().parents[2]
-WEB = Path(__file__).resolve().parent / "web"       # index.html, app.js, style.css
-CRITERIA = ("coarse", "fine")
+WEB = Path(__file__).resolve().parent / "web"
+CRITERIA = artifacts.CRITERIA
 
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--out", default="docs", help="출력 폴더 (저장소 기준 상대경로)")
-    p.add_argument("--queries", type=int, default=50, help="서브셋당 쿼리 수")
-    p.add_argument("--topk", type=int, default=10)
-    p.add_argument("--thumb", type=int, default=160, help="썸네일 한 변 픽셀")
-    p.add_argument("--quality", type=int, default=72, help="JPEG 품질")
-    p.add_argument("--select", choices=["mixed", "disagree", "random", "first"],
-                   default="mixed",
-                   help="쿼리 고르는 기준 (mixed: 절반은 모델 간 결과가 갈리는 쿼리, "
-                        "절반은 무작위)")
-    p.add_argument("--subsets", default=None, help="쉼표로 구분. 기본은 전체")
-    p.add_argument("--models", default=None, help="쉼표로 구분. 기본은 캐시가 있는 전체")
+    p.add_argument("--out", default="site", help="출력 폴더 (저장소 기준)")
+    p.add_argument("--queries", type=int, default=50, help="서브셋당 이미지로 보여줄 쿼리 수")
+    p.add_argument("--select", choices=["mixed", "disagree", "random"], default="mixed")
+    p.add_argument("--thumb", type=int, default=220, help="갤러리 썸네일 긴 변 픽셀")
+    p.add_argument("--query-px", type=int, default=440, help="쿼리 이미지 긴 변 픽셀")
+    p.add_argument("--quality", type=int, default=74, help="WebP 품질")
     p.add_argument("--seed", type=int, default=0)
     return p.parse_args()
 
 
-def pick_queries(config: str, models: list, n: int, topk: int, how: str, seed: int) -> list:
-    """보여줄 쿼리 인덱스.
+# ------------------------------------------------------------------ 데이터셋
 
-    disagree는 모델 간 top-K가 덜 겹치는 쿼리를 고른다. 비교할 거리가 많지만
-    어려운 쿼리만 모여 전반적인 성능이 실제보다 나빠 보인다. 그래서 기본값
-    mixed는 절반만 그렇게 고르고 나머지는 무작위로 채워 균형을 맞춘다.
+_SPLITS = {}
+
+
+def _split(config: str, split: str):
+    """(hf_dataset, to_record, cols). 같은 split을 여러 번 열지 않게 캐시한다."""
+    if (config, split) not in _SPLITS:
+        from benchmark.data import lookbench
+
+        cfg = json.loads((REPO / "benchmark" / "config.json").read_text(encoding="utf-8"))
+        ds_cfg = cfg["datasets"]["lookbench"]
+        cache = Path(cfg["data"]["hf_cache_dir"])
+        cache = cache if cache.is_absolute() else REPO / cache
+        _SPLITS[(config, split)] = lookbench.load_split(
+            ds_cfg["repo_id"], config, split, cache_dir=str(cache),
+            revision=ds_cfg.get("revision"))
+    return _SPLITS[(config, split)]
+
+
+def dataset_gallery_digest(subset: str) -> str:
+    """데이터셋에서 바로 계산한 갤러리 item_id 순서의 지문 (이미지는 읽지 않는다).
+
+    결과물의 행 번호가 정말 이 데이터셋의 같은 이미지를 가리키는지 확인하는 용도다.
+    어긋나면 썸네일이 조용히 엉뚱한 상품을 보여주므로 빌드를 멈춘다.
+    item_id 규칙은 lookbench.load_split과 같다 ('{config}:{item_ID}').
     """
-    _, metas = core.load_queries(models[0], config)
-    total = len(metas)
-    if n >= total:
-        return list(range(total))
-    if how == "first":
-        return list(range(n))
-    rng = np.random.default_rng(seed)
-    if how == "random":
-        return sorted(rng.choice(total, size=n, replace=False).tolist())
-    if how == "mixed":
-        hard = pick_queries(config, models, n // 2, topk, "disagree", seed)
-        rest = [i for i in range(total) if i not in set(hard)]
-        extra = rng.choice(len(rest), size=min(n - len(hard), len(rest)), replace=False)
-        return sorted(hard + [rest[i] for i in extra])
-
-    # 모델별 top-K를 한 번에 구해 겹침을 센다. 겹침이 적을수록 비교할 거리가 많다.
-    tops = {}
-    for model in models:
-        q_vecs, _ = core.load_queries(model, config)
-        g_vecs, _, _ = core.load_gallery(model, config)
-        sims = q_vecs @ g_vecs.T                        # (Q, N)
-        part = np.argpartition(-sims, topk - 1, axis=1)[:, :topk]
-        tops[model] = part
-
-    scores = []
-    for qi in range(total):
-        counts = Counter()
-        for model in models:
-            counts.update(tops[model][qi].tolist())
-        # 모든 모델이 같은 걸 찾으면 len(models)짜리 항목만 나온다 → 겹침 점수 최대
-        overlap = sum(c for c in counts.values() if c > 1) / (topk * len(models))
-        scores.append((overlap, qi))
-    scores.sort()                                       # 겹침 적은 순
-    return sorted(qi for _, qi in scores[:n])
+    h = hashlib.sha1()
+    for config in (subset, "noise"):
+        ds, _, cols = _split(config, "gallery")
+        for value in ds.select_columns([cols["item_id"]])[cols["item_id"]]:
+            h.update(f"{config}:{value}".encode("utf-8"))
+            h.update(b"\n")
+    return h.hexdigest()
 
 
-def collect(config: str, models: list, q_indices: list, topk: int) -> tuple:
-    """쿼리별 결과와, 그 결과에 등장한 갤러리 행 목록을 만든다."""
-    index = core.relevance_index(config)
-    _, g_metas, n_subset = core.load_gallery(models[0], config)
-    _, q_metas = core.load_queries(models[0], config)
-
-    queries, used_rows = [], set()
-    for qi in q_indices:
-        q_meta = q_metas[qi]
-        entry = {
-            "idx": qi,
-            "category": q_meta["category"],
-            "attrs": q_meta["attrs"],
-            "n_relevant": {c: index.count_relevant(q_meta, c) for c in CRITERIA},
-            "results": {},
-        }
-        for model in models:
-            rows, scores = core.search_one(model, config, qi, topk)
-            hits = {c: core.judge_hits(config, q_meta, rows, c) for c in CRITERIA}
-            entry["results"][model] = {
-                "rows": [int(r) for r in rows],
-                "scores": [round(float(s), 4) for s in scores],
-                "hits": {c: [bool(h) for h in hits[c]] for c in CRITERIA},
-                "metrics": {c: {k: round(v, 4) for k, v in
-                                core.query_scores(config, q_meta, hits[c], c).items()}
-                            for c in CRITERIA},
-            }
-            used_rows.update(int(r) for r in rows)
-        queries.append(entry)
-
-    gallery = {str(r): {"label": "noise" if r >= n_subset else g_metas[r]["category"]}
-               for r in sorted(used_rows)}
-    return queries, gallery, n_subset, len(g_metas)
+def gallery_source(row: int, subset: str, n_subset: int):
+    """갤러리 행 번호 → (config, 그 config 안의 행 번호)."""
+    return (subset, row) if row < n_subset else ("noise", row - n_subset)
 
 
-def save_thumb(img, path: Path, size: int, quality: int):
+def save_image(img, path: Path, size: int, quality: int):
     if path.exists():
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     img = img.convert("RGB")
     img.thumbnail((size, size))
-    img.save(path, format="JPEG", quality=quality, optimize=True)
+    img.save(path, format="WEBP", quality=quality, method=5)
 
 
-def export_images(config: str, queries: list, gallery: dict, n_subset: int,
-                  out: Path, size: int, quality: int):
-    """쿼리·갤러리 썸네일을 굽는다. 갤러리 파일명은 출처 기준이라 서로 공유된다."""
-    for entry in queries:
-        save_thumb(core.query_image(config, entry["idx"]),
-                   out / "img" / config / f"q{entry['idx']}.jpg", size, quality)
-        entry["img"] = f"img/{config}/q{entry['idx']}.jpg"
+# ------------------------------------------------------------------ 결과물
 
-    for row_s in gallery:
-        row = int(row_s)
-        # noise 풀 이미지는 서브셋이 달라도 같은 파일 하나만 있으면 된다
-        src, name = ((config, f"g{row}") if row < n_subset
-                     else ("noise", f"g{row - n_subset}"))
-        rel = f"img/{src}/{name}.jpg"
-        save_thumb(core.gallery_image(config, row, n_subset),
-                   out / rel, size, quality)
-        gallery[row_s]["img"] = rel
+def load_results(lineup: dict) -> dict:
+    """{subset: {model: artifact}}. 갤러리·쿼리 순서가 모델끼리 같은지 확인한다."""
+    out = {}
+    for subset in lineup["subsets"]:
+        found = {}
+        for spec in lineup["models"]:
+            if artifacts.exists(spec["key"], subset):
+                found[spec["key"]] = artifacts.load(spec["key"], subset)
+        if not found:
+            continue
+        digests = {(a["info"]["gallery_digest"], a["info"]["query_digest"]) for a in found.values()}
+        if len(digests) != 1:
+            detail = {k: a["info"]["gallery_digest"][:8] for k, a in found.items()}
+            raise SystemExit(f"[{subset}] 모델마다 갤러리 순서가 다릅니다: {detail}")
+        out[subset] = found
+    return out
 
 
-def build_summary(models: list, subsets: list) -> list:
-    """모델별 정확도(서브셋 전체 평균) + 속도 + 메모리."""
-    rows = core.perf_table(models)
-    for row in rows:
-        # 모델마다 돌린 서브셋이 다르다(브랜치에서 가져와 한 서브셋만 돌린 경우 등).
-        # 캐시가 있는 서브셋만 계산하고 나머지는 비워 둔다 — 사이트에서 '—'로 나온다.
-        row["accuracy"] = {
-            config: dict(core.eval_metrics(row["model"], config))
-            for config in subsets
-            if row["model"] in core.available_models(config)
-        }
-        row.pop("runs_sec", None)            # 사이트에서 안 쓰는 큰 값은 뺀다
-    return rows
+def load_perf(key: str) -> dict:
+    path = results_dir() / f"perf__{key}.json"
+    if not path.exists():
+        return {}
+    with open(path, encoding="utf-8") as f:
+        perf = json.load(f)
+    # 지연·토큰이 없는 예전 측정은 조건이 달라 섞지 않는다 (worker.perf_ready와 같은 기준)
+    if "latency_ms_b1" not in perf:
+        return {}
+    keep = ("sec_per_1000", "images_per_sec", "latency_ms_b1", "preprocess_sec_per_1000",
+            "gpu_sec_per_1000", "peak_vram_mb", "model_params", "model_size_mb",
+            "embed_dim", "gallery_60k_mb", "vision_tokens_per_image",
+            "llm_tokens_per_image", "load_sec", "batch_size", "input_shape", "gpu",
+            "n_images", "config", "torch", "transformers", "timestamp")
+    return {k: perf.get(k) for k in keep if k in perf}
+
+
+def _stats(per_query: list) -> dict:
+    """여러 서브셋의 쿼리별 값을 이어붙여 전체 지표를 낸다 (= 쿼리 수 가중 평균)."""
+    out = {"n_queries": int(sum(len(p["ap_coarse"]) for p in per_query))}
+    for c in CRITERIA:
+        hits = np.concatenate([p[f"hits_{c}"] for p in per_query])
+        ap = np.concatenate([p[f"ap_{c}"] for p in per_query])
+        out[c] = {"recall@1": float(hits[:, :1].any(axis=1).mean()),
+                  "recall@10": float(hits[:, :10].any(axis=1).mean()),
+                  "map@10": float(ap.mean())}
+    return out
+
+
+def _versus(per_query: list, base: list) -> dict:
+    """기준 모델 대비 쿼리별 승·무·패 (AP@10 기준)."""
+    out = {}
+    for c in CRITERIA:
+        ap = np.concatenate([p[f"ap_{c}"] for p in per_query]).astype(np.float64)
+        ap_b = np.concatenate([b[f"ap_{c}"] for b in base]).astype(np.float64)
+        diff = ap - ap_b
+        out[c] = {"win": int((diff > 1e-6).sum()), "tie": int((np.abs(diff) <= 1e-6).sum()),
+                  "loss": int((diff < -1e-6).sum())}
+    return out
+
+
+def build_summary(lineup: dict, results: dict) -> dict:
+    """{'all' | subset: {model: {n_queries, coarse:{...}, fine:{...}, vs:{...}}}}."""
+    baseline = lineup["baseline"]
+    subsets = list(results)
+    summary = {}
+    for scope in ["all", *subsets]:
+        scope_subsets = subsets if scope == "all" else [scope]
+        rows = {}
+        for spec in lineup["models"]:
+            key = spec["key"]
+            # '전체'는 네 서브셋이 다 있을 때만 낸다. 일부만 있으면 쿼리 구성이 달라 비교가 안 된다.
+            if not all(key in results[s] for s in scope_subsets):
+                continue
+            per_query = [results[s][key] for s in scope_subsets]
+            rows[key] = _stats(per_query)
+            if key != baseline and all(baseline in results[s] for s in scope_subsets):
+                rows[key]["vs"] = _versus(per_query, [results[s][baseline] for s in scope_subsets])
+        summary[scope] = rows
+    return summary
+
+
+# ------------------------------------------------------------------ 쿼리 고르기
+
+def pick_queries(found: dict, baseline: str, n: int, how: str, rng) -> list:
+    """이미지로 보여줄 쿼리 인덱스.
+
+    disagree는 기준 모델의 top-10과 덜 겹치고, 모델 간 정답 여부가 갈리는 쿼리다.
+    그런 쿼리만 모으면 어려운 쿼리 위주라 전체 인상이 나빠 보이므로 기본값
+    mixed는 절반만 그렇게 고르고 나머지는 무작위로 채운다.
+    """
+    total = next(iter(found.values()))["rows"].shape[0]
+    if n >= total:
+        return list(range(total))
+    if how == "random":
+        return sorted(rng.choice(total, size=n, replace=False).tolist())
+
+    base = found.get(baseline) or next(iter(found.values()))
+    others = [a for k, a in found.items() if a is not base] or [base]
+    overlap = np.zeros(total)
+    for a in others:
+        same = (a["rows"][:, :, None] == base["rows"][:, None, :]).any(axis=2)
+        overlap += same.mean(axis=1)
+    top1 = np.stack([a["hits_coarse"][:, 0] for a in found.values()] +
+                    [a["hits_fine"][:, 0] for a in found.values()], axis=1)
+    spread = top1.std(axis=1)                       # 모델끼리 1위 정답 여부가 갈리면 큼
+    score = overlap / len(others) - spread          # 작을수록 비교할 거리가 많다
+    order = np.argsort(score, kind="stable")
+
+    if how == "disagree":
+        return sorted(order[:n].tolist())
+    hard = order[: n // 2].tolist()
+    rest = np.setdiff1d(np.arange(total), hard)
+    extra = rng.choice(rest, size=n - len(hard), replace=False).tolist()
+    return sorted(hard + extra)
+
+
+# ------------------------------------------------------------------ 굽기
+
+def export_subset(subset: str, found: dict, lineup: dict, args, out: Path, rng) -> dict:
+    baseline = lineup["baseline"]
+    info = next(iter(found.values()))["info"]
+    n_subset = info["n_subset_gallery"]
+
+    digest = dataset_gallery_digest(subset)
+    if digest != info["gallery_digest"]:
+        raise SystemExit(f"[{subset}] 결과물의 갤러리 순서가 로컬 데이터셋과 다릅니다. "
+                         "데이터셋 revision을 확인하세요.")
+
+    picked = pick_queries(found, baseline, args.queries, args.select, rng)
+    q_ds, q_rec, _ = _split(subset, "query")
+    if len(q_ds) != info["n_queries"]:
+        raise SystemExit(f"[{subset}] 쿼리 수가 다릅니다: 결과물 {info['n_queries']}, "
+                         f"데이터셋 {len(q_ds)}")
+
+    queries, used = [], set()
+    for qi in picked:
+        rec = q_rec(q_ds[qi])
+        rel = f"img/{subset}/q{qi}.webp"
+        save_image(rec.image, out / rel, args.query_px, args.quality)
+        entry = {"idx": qi, "img": rel, "cat": rec.category, "attrs": rec.attrs,
+                 "n_rel": {c: int(next(iter(found.values()))[f"n_rel_{c}"][qi]) for c in CRITERIA},
+                 "res": {}}
+        for key, a in found.items():
+            rows = a["rows"][qi].tolist()
+            entry["res"][key] = {
+                "rows": rows,
+                "scores": [round(float(s), 3) for s in a["scores"][qi]],
+                "hits": {c: "".join("1" if h else "0" for h in a[f"hits_{c}"][qi]) for c in CRITERIA},
+                "ap": {c: round(float(a[f"ap_{c}"][qi]), 4) for c in CRITERIA},
+            }
+            used.update(rows)
+        queries.append(entry)
+
+    gallery = {}
+    for row in sorted(used):
+        config, local = gallery_source(row, subset, n_subset)
+        ds, rec_fn, _ = _split(config, "gallery")
+        rec = rec_fn(ds[local])
+        rel = f"img/{config}/g{local}.webp"            # noise 이미지는 서브셋끼리 공유
+        save_image(rec.image, out / rel, args.thumb, args.quality)
+        gallery[str(row)] = {"img": rel, "cat": "noise" if config == "noise" else rec.category,
+                             "attrs": rec.attrs[:6]}
+
+    print(f"[{subset}] 쿼리 {len(queries)}개 / 갤러리 썸네일 {len(gallery)}장 / 모델 {len(found)}개")
+    return {"key": subset, "n_queries": info["n_queries"], "n_gallery": info["n_gallery"],
+            "models": list(found), "queries": queries, "gallery": gallery}
 
 
 def main():
     args = parse_args()
-    out = (ROOT / args.out).resolve()
-    subsets = ([s.strip() for s in args.subsets.split(",")] if args.subsets
-               else core.subsets())
+    out = (REPO / args.out).resolve()
+    if REPO not in out.parents:
+        raise SystemExit(f"출력 폴더는 저장소 안이어야 합니다: {out}")
+    lineup = load_lineup()
+    results = load_results(lineup)
+    if not results:
+        raise SystemExit("결과물이 하나도 없습니다. python -m benchmark.compute run 을 먼저 돌리세요.")
 
-    manifest = {"subsets": [], "generated_with": {"queries": args.queries,
-                                                  "topk": args.topk,
-                                                  "select": args.select}}
-    all_models = []
-    for config in subsets:
-        models = ([m.strip() for m in args.models.split(",")] if args.models
-                  else core.available_models(config))
-        if not models:
-            print(f"[skip] {config}: 임베딩 캐시가 없습니다")
-            continue
+    # 빌드 결과물 폴더라 매번 새로 만든다. 지난 빌드의 썸네일(다른 크기, 이제 안 쓰는
+    # 쿼리)이 섞여 배포 용량만 늘어나는 걸 막는다.
+    shutil.rmtree(out, ignore_errors=True)
 
-        print(f"[{config}] 모델 {len(models)}개, 쿼리 고르는 중 ({args.select})")
-        q_indices = pick_queries(config, models, args.queries, args.topk,
-                                 args.select, args.seed)
-        queries, gallery, n_subset, gallery_size = collect(
-            config, models, q_indices, args.topk)
-        print(f"[{config}] 쿼리 {len(queries)}개, 썸네일 {len(gallery) + len(queries)}장 굽는 중")
-        export_images(config, queries, gallery, n_subset, out, args.thumb, args.quality)
+    rng = np.random.default_rng(args.seed)
+    subsets = {s: export_subset(s, found, lineup, args, out, rng) for s, found in results.items()}
 
-        data = {"config": config, "models": models, "topk": args.topk,
-                "gallery_size": gallery_size, "queries": queries, "gallery": gallery}
-        (out / "data").mkdir(parents=True, exist_ok=True)
-        with open(out / "data" / f"{config}.json", "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
-        manifest["subsets"].append({"config": config, "n_queries": len(queries),
-                                    "models": models})
-        all_models += [m for m in models if m not in all_models]
+    first = next(iter(next(iter(results.values())).values()))["info"]
+    models = []
+    for spec in lineup["models"]:
+        key = spec["key"]
+        src = next((results[s][key]["info"].get("source", {})
+                    for s in results if key in results[s]), {})
+        models.append({
+            "key": key, "label": spec["label"], "note": spec.get("note", ""),
+            "links": spec.get("links", {}), "branch": spec["branch"],
+            "commit": (src.get("commit") or "")[:7],
+            "baseline": key == lineup["baseline"],
+            "subsets": [s for s in results if key in results[s]],
+            "perf": load_perf(key),
+        })
 
-    if not all_models:
-        raise SystemExit("내보낼 모델이 없습니다. run_eval을 먼저 돌리세요.")
+    bundle = {
+        "meta": {
+            "generated": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "baseline": lineup["baseline"],
+            "dataset": {"name": "LookBench", "revision": first.get("dataset_revision"),
+                        "url": "https://huggingface.co/datasets/srpone/look-bench"},
+            "topk": first["topk"],
+            "queries_per_subset": args.queries,
+            "select": args.select,
+        },
+        "models": models,
+        "summary": build_summary(lineup, results),
+        "subsets": subsets,
+    }
 
-    manifest["models"] = [{"key": m, "label": core.label_of(m),
-                           "baseline": m == core.BASELINE} for m in all_models]
-    manifest["summary"] = build_summary(all_models, [s["config"] for s in manifest["subsets"]])
-    with open(out / "data" / "manifest.json", "w", encoding="utf-8") as f:
-        json.dump(manifest, f, ensure_ascii=False, indent=1)
-
+    # JSON이 아니라 JS로 싣는다. fetch()는 file://에서 막혀, 폴더째 받아 index.html을
+    # 더블클릭해도 열리게 하려면 <script>로 읽히는 형태여야 한다.
+    (out / "data").mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(bundle, ensure_ascii=False, separators=(",", ":"))
+    (out / "data" / "bundle.js").write_text(f"window.VIEWER_DATA={payload};\n", encoding="utf-8")
     for name in ("index.html", "app.js", "style.css"):
         shutil.copy(WEB / name, out / name)
-    (out / ".nojekyll").write_text("", encoding="utf-8")     # _ 로 시작하는 파일 보호
+    (out / ".nojekyll").write_text("", encoding="utf-8")
 
     size_mb = sum(p.stat().st_size for p in out.rglob("*") if p.is_file()) / 1024**2
     print(f"\n[done] {out} ({size_mb:.1f}MB)")
-    print("로컬 확인:  python -m http.server -d docs 8000")
+    print(f"로컬 확인: {out / 'index.html'} 를 브라우저로 열기 (서버 불필요)")
 
 
 if __name__ == "__main__":

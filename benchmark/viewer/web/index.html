@@ -3,61 +3,134 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>임베딩 모델 검색 결과 비교</title>
+<meta name="robots" content="noindex, nofollow">
+<title>임베딩 모델 검색 비교</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="top">
-  <div class="wrap">
-    <h1>임베딩 모델 검색 결과 비교</h1>
-    <p class="sub">DreamSim을 기준으로, 같은 쿼리를 모델별로 어떻게 찾는지 나란히 봅니다.</p>
+  <div class="wrap top-in">
+    <div class="brand">
+      <span class="title">임베딩 모델 검색 비교</span>
+      <span class="sub" id="sub"></span>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="화면">
+      <button class="tab" role="tab" data-view="compare">검색 결과</button>
+      <button class="tab" role="tab" data-view="summary">성능 요약</button>
+    </nav>
   </div>
 </header>
 
 <main class="wrap">
-  <section class="panel">
-    <h2>모델 요약</h2>
-    <div class="scroll"><table id="summary"></table></div>
-    <p class="note" id="summary-note"></p>
-  </section>
-
-  <section class="panel">
-    <div class="controls">
-      <label>서브셋
-        <select id="subset"></select>
-      </label>
-      <label>정답 기준
-        <select id="criterion">
-          <option value="coarse">coarse — 같은 카테고리</option>
-          <option value="fine">fine — 카테고리 + 속성</option>
-        </select>
-      </label>
-      <label>쿼리
-        <select id="query"></select>
-      </label>
-      <span class="btns">
-        <button id="prev" type="button">이전</button>
-        <button id="next" type="button">다음</button>
-        <button id="rand" type="button">무작위</button>
-      </span>
+  <!-- ================================================= 성능 요약 -->
+  <section id="view-summary" class="view" hidden>
+    <div class="toolbar">
+      <div class="field">
+        <span class="field-label">서브셋</span>
+        <div class="seg" id="sum-scope" role="group" aria-label="서브셋"></div>
+      </div>
+      <div class="field">
+        <span class="field-label">정답 기준</span>
+        <div class="seg" id="sum-crit" role="group" aria-label="정답 기준"></div>
+      </div>
     </div>
 
-    <div class="query-card">
-      <img id="q-img" alt="쿼리 이미지">
-      <dl id="q-meta"></dl>
+    <div class="tiles" id="tiles"></div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>정확도</h2>
+        <p class="hint" id="acc-hint"></p>
+      </div>
+      <div class="scroll"><table class="tbl" id="acc-table"></table></div>
     </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>속도 · 자원</h2>
+        <p class="hint" id="perf-hint"></p>
+      </div>
+      <div class="scroll"><table class="tbl" id="perf-table"></table></div>
+    </div>
+
+    <details class="card glossary">
+      <summary>지표 설명</summary>
+      <dl>
+        <dt>coarse / fine</dt>
+        <dd>coarse는 같은 카테고리면 정답, fine은 카테고리와 속성이 모두 같아야 정답입니다.</dd>
+        <dt>R@1 · R@10</dt>
+        <dd>1위(또는 10위 안)에 정답이 하나라도 있는 쿼리의 비율입니다.</dd>
+        <dt>mAP@10</dt>
+        <dd>10위까지의 정답 순서를 함께 보는 점수입니다. 상위에 정답이 많이 몰릴수록 높습니다.</dd>
+        <dt>DreamSim 대비</dt>
+        <dd>쿼리마다 AP@10을 DreamSim과 비교해 더 높은(승)·같은(무)·낮은(패) 쿼리 수입니다.</dd>
+        <dt>1000장 처리</dt>
+        <dd>전처리부터 임베딩까지 1,000장을 처리하는 시간입니다(갤러리 색인 비용). 배수는 DreamSim 대비입니다.</dd>
+        <dt>쿼리 1장</dt>
+        <dd>사용자가 올린 이미지 한 장을 임베딩하는 시간(batch 1)입니다. 검색 응답 시간에 그대로 더해집니다.</dd>
+        <dt>이미지 토큰</dt>
+        <dd>이미지 한 장이 모델 안에서 몇 개 토큰이 되는지입니다. ViT 계열은 패치 수(백본이 여럿이면 합계),
+          VLM 계열(Qwen3-VL, WeMM)은 언어 모델에 들어가는 길이이며 원본 해상도를 따라가 이미지마다 다릅니다(평균).</dd>
+        <dt>인덱스</dt>
+        <dd>갤러리 6만 장의 임베딩을 float32로 저장했을 때 크기입니다.</dd>
+      </dl>
+    </details>
   </section>
 
-  <section id="results"></section>
+  <!-- ================================================= 검색 결과 -->
+  <section id="view-compare" class="view" hidden>
+    <div class="toolbar sticky">
+      <div class="field">
+        <span class="field-label">서브셋</span>
+        <select id="cmp-subset" aria-label="서브셋"></select>
+      </div>
+      <div class="field">
+        <span class="field-label">정답 기준</span>
+        <div class="seg" id="cmp-crit" role="group" aria-label="정답 기준"></div>
+      </div>
+      <div class="field">
+        <span class="field-label">쿼리</span>
+        <div class="qnav">
+          <button class="btn icon" id="prev" aria-label="이전 쿼리">‹</button>
+          <span class="qpos" id="qpos"></span>
+          <button class="btn icon" id="next" aria-label="다음 쿼리">›</button>
+          <button class="btn" id="rand">무작위</button>
+        </div>
+      </div>
+    </div>
 
-  <p class="note">
-    테두리가 초록색이면 현재 기준으로 정답입니다. 숫자는 코사인 유사도이고,
-    캡션은 갤러리 아이템의 카테고리입니다. <code>noise</code>는 공용 distractor
-    풀에서 온 이미지입니다.
-  </p>
-  <p class="note" id="footer-note"></p>
+    <div class="picker">
+      <span class="field-label">비교할 모델</span>
+      <div class="chips" id="model-chips"></div>
+      <div class="picker-actions">
+        <button class="btn ghost" id="pick-all">전체</button>
+        <button class="btn ghost" id="pick-none">비우기</button>
+      </div>
+    </div>
+
+    <div class="qstrip" id="qstrip" aria-label="쿼리 목록"></div>
+
+    <div class="cmp">
+      <aside class="qcard" id="qcard"></aside>
+      <div class="rows" id="rows"></div>
+    </div>
+
+    <p class="legend">
+      <span class="lg-hit"></span> 현재 정답 기준으로 정답
+      <span class="lg-sep"></span>
+      <span class="lg-ds">D3</span> DreamSim도 찾은 이미지 (DreamSim 순위)
+      <span class="lg-sep"></span>
+      숫자는 코사인 유사도, <code>noise</code>는 공용 방해 이미지 풀입니다. ← → 키로 쿼리를 넘길 수 있습니다.
+    </p>
+  </section>
+
+  <footer class="foot" id="foot"></footer>
 </main>
 
+<!-- 데이터를 JS로 싣는다: file://에서도 열리게 하기 위함 (fetch는 막힌다) -->
+<script src="data/bundle.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

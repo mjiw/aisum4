@@ -1,15 +1,8 @@
-"""원격 브랜치의 모델을 현재 작업 폴더를 건드리지 않고 돌린다.
+"""Streamlit 뷰어의 「브랜치에서 모델 가져오기」 — 아무 브랜치의 모델이나 돌린다.
 
-팀은 모델마다 브랜치를 따로 쓴다(test/tianmu-mere, test/zooclaw, ...).
-남의 모델을 비교하려면 원래는 브랜치를 받아 체크아웃해야 하는데, 작업 중이던
-변경과 섞이고 브랜치를 오갈 때마다 번거롭다.
-
-그래서 **임시 워크트리**를 쓴다. `git worktree add`로 그 브랜치를 임시 폴더에
-펼치고, 거기서 평가를 돌린 뒤 지운다. 현재 브랜치와 작업 트리는 그대로다.
-
-임시 폴더의 config.json은 경로만 고쳐 쓴다 — 임베딩 캐시·결과·모델 가중치를
-**본 저장소 폴더**에 쓰게 만들어야 뷰어가 그 결과를 보고, 1GB짜리 가중치를
-다시 받지 않는다.
+비교 사이트에 올라가는 정식 라인업(benchmark/compute/lineup.json)은
+`python -m benchmark.compute run`으로 돌린다. 이 모듈은 라인업에 없는 모델을
+로컬에서 잠깐 시험해 볼 때 쓴다. 워크트리 처리는 compute.worktree와 같은 코드다.
 
     python -m benchmark.viewer.remote --branch test/zooclaw \
         --model zooclaw_fashionsiglip2 --configs real_studio_flat
@@ -21,32 +14,14 @@ import argparse
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
-import tempfile
 from datetime import datetime
-from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
-BENCH = REPO / "benchmark"
-# 임시 워크트리에서 본 저장소로 돌려놓을 경로들 (config.json의 data 섹션)
-_DATA_KEYS = ("hf_cache_dir", "embed_cache_dir", "output_dir")
-
-
-def _git(*args, cwd=REPO, check=True):
-    return subprocess.run(["git", *args], cwd=cwd, check=check,
-                          capture_output=True, text=True, encoding="utf-8",
-                          errors="replace")
-
-
-def fetch() -> str:
-    """원격 브랜치 목록을 갱신한다. 실패해도 캐시된 목록으로 계속 간다."""
-    try:
-        _git("fetch", "--prune", "--quiet", "origin")
-        return ""
-    except subprocess.CalledProcessError as exc:
-        return (exc.stderr or str(exc)).strip()
+from benchmark.compute import BENCH
+from benchmark.compute.worktree import add_worktree as _add_worktree
+from benchmark.compute.worktree import fetch, git as _git  # noqa: F401  (app.py가 fetch를 쓴다)
+from benchmark.compute.worktree import remove_worktree as _remove_worktree
 
 
 def branches() -> list:
@@ -135,42 +110,6 @@ def _name_distance(model: str, branch: str) -> int:
     if m.startswith(b) or b.startswith(m):
         return 1
     return 2 if b in m or m in b else 3
-
-
-def _retarget_config(worktree: Path):
-    """임시 워크트리의 config.json 경로를 본 저장소 쪽으로 돌린다."""
-    path = worktree / "benchmark" / "config.json"
-    with open(path, encoding="utf-8") as f:
-        cfg = json.load(f)
-
-    for key in _DATA_KEYS:
-        if key in cfg.get("data", {}):
-            cfg["data"][key] = str((REPO / cfg["data"][key]).resolve())
-    # 모델 가중치도 본 저장소 캐시를 쓴다. 1GB짜리를 다시 받지 않기 위해서다.
-    for entry in cfg.get("models", {}).values():
-        if isinstance(entry, dict) and entry.get("cache_dir"):
-            entry["cache_dir"] = str((REPO / entry["cache_dir"]).resolve())
-
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(cfg, f, ensure_ascii=False, indent=2)
-
-
-def _add_worktree(branch: str) -> Path:
-    worktree = Path(tempfile.mkdtemp(prefix="aisum-wt-"))
-    # mkdtemp가 만든 빈 폴더가 있으면 git이 거부한다
-    shutil.rmtree(worktree, ignore_errors=True)
-    _git("worktree", "add", "--detach", str(worktree), f"origin/{branch}")
-    _retarget_config(worktree)
-    # 측정 코드는 **이쪽 버전**을 덮어씌운다. 브랜치마다 측정 방식이 다르면
-    # 속도·메모리 비교가 성립하지 않는다(아예 없는 브랜치도 많다).
-    shutil.copy(BENCH / "profile_perf.py", worktree / "benchmark" / "profile_perf.py")
-    return worktree
-
-
-def _remove_worktree(worktree: Path):
-    _git("worktree", "remove", "--force", str(worktree), check=False)
-    shutil.rmtree(worktree, ignore_errors=True)
-    _git("worktree", "prune", check=False)
 
 
 def run(branch: str, model: str, configs: list, log, profile: bool = True) -> int:

@@ -43,6 +43,7 @@ KNOWN_LABELS = {
     "qwen3_vl_embedding_2b": "Qwen3-VL-Embedding-2B",
     "wemm_embedding_2b": "WeMM-Embedding-2B",
     "mcip_so400m_14_384": "MCIP ViT-SO400M-14-384",
+    "tipsv2_l14": "TIPSv2-L/14",
     "franca_vitb14": "Franca ViT-B/14",
     "bge_vl_large": "BGE-VL-Large",
     "eva02_large": "EVA02-Large",

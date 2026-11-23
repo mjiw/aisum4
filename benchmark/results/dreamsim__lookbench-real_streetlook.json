@@ -26,15 +26,15 @@
     10
   ],
   "metrics": {
-    "coarse_recall@1": 0.6534,
-    "coarse_recall@10": 0.8644,
-    "fine_recall@1": 0.261,
+    "coarse_recall@1": 0.6504,
+    "coarse_recall@10": 0.8634,
+    "fine_recall@1": 0.2691,
     "fine_recall@10": 0.4608,
-    "coarse_map@10": 0.3414,
-    "fine_map@10": 0.199
+    "coarse_map@10": 0.3412,
+    "fine_map@10": 0.2005
   },
   "run": {
-    "timestamp": "2026-11-02T13:31:42",
+    "timestamp": "2026-11-23T17:25:28",
     "device": "cuda",
     "batch_size": 16,
     "gpu_memory_fraction": 0.35,
