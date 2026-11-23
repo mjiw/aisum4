@@ -10,8 +10,10 @@ const labelOf = (key) =>
 const isBaseline = (key) =>
   ((state.manifest.models.find((m) => m.key === key) || {}).baseline) === true;
 
-async function boot() {
-  state.manifest = await fetch("data/manifest.json").then((r) => r.json());
+function boot() {
+  const data = window.VIEWER_DATA;
+  if (!data) throw new Error("data/bundle.js를 불러오지 못했습니다");
+  state.manifest = data.manifest;
 
   const subsetSel = $("subset");
   state.manifest.subsets.forEach((s) => {
@@ -34,7 +36,7 @@ async function boot() {
     `정확도는 서브셋 전체(쿼리 전부) 평균이고, 속도·메모리는 같은 조건에서 측정했습니다.`;
 
   renderSummary();
-  await loadSubset(state.manifest.subsets[0].config);
+  loadSubset(state.manifest.subsets[0].config);
 }
 
 function step(delta) {
@@ -43,8 +45,8 @@ function step(delta) {
   render();
 }
 
-async function loadSubset(config) {
-  state.data = await fetch(`data/${config}.json`).then((r) => r.json());
+function loadSubset(config) {
+  state.data = window.VIEWER_DATA.subsets[config];
   state.qi = 0;
 
   const sel = $("query");
@@ -186,9 +188,11 @@ function render() {
   $("results").innerHTML = blocks.join("");
 }
 
-boot().catch((err) => {
+try {
+  boot();
+} catch (err) {
   document.body.insertAdjacentHTML(
     "afterbegin",
     `<p style="padding:20px;color:#dc2626">데이터를 불러오지 못했습니다: ${err}</p>`
   );
-});
+}

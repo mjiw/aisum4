@@ -1,0 +1,41 @@
+{
+  "model": "bge_vl_large",
+  "model_metadata": {
+    "hf_id": "BAAI/BGE-VL-large",
+    "revision": "40fb48217f521df22a2a5bf15edd52ed1146ef05",
+    "pooling": "clip_visual_projection",
+    "encode_mode": "image_only",
+    "loaded_as": "transformers.CLIPModel"
+  },
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "torch": "2.14.0+cu130",
+  "dataset": "lookbench",
+  "config": "real_studio_flat",
+  "split": "query",
+  "n_images": 200,
+  "batch_size": 16,
+  "input_shape": [
+    3,
+    224,
+    224
+  ],
+  "repeats": 3,
+  "runs_sec": [
+    2.8302,
+    2.84,
+    2.8188
+  ],
+  "sec_per_1000": 14.151,
+  "images_per_sec": 70.67,
+  "preprocess_sec_per_1000": 9.043,
+  "gpu_sec_per_1000": 5.3,
+  "peak_vram_mb": 1905.8,
+  "peak_vram_reserved_mb": 2038.0,
+  "model_params": 427616513,
+  "model_size_mb": 1631.2,
+  "embed_dim": 768,
+  "embedding_bytes": 3072,
+  "gallery_60k_mb": 175.8,
+  "timestamp": "2026-11-02T16:38:31"
+}
