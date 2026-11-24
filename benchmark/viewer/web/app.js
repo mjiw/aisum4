@@ -479,18 +479,9 @@ function renderStrip(sub) {
 
 function renderQuery(sub) {
   const q = sub.queries[S.qi];
-  const attrs = q.attrs.length
-    ? `<span class="attrs">${q.attrs.map((a) => `<span class="attr">${esc(a)}</span>`).join("")}</span>`
-    : "—";
   $("qcard").innerHTML = `
-    <div class="qimg"><img src="${esc(q.img)}" alt="쿼리 이미지"></div>
-    <dl class="qmeta">
-      <dt>쿼리</dt><dd>${esc(S.subset)} #${q.idx}</dd>
-      <dt>카테고리</dt><dd>${esc(q.cat)}</dd>
-      <dt>속성</dt><dd>${attrs}</dd>
-      <dt>정답 수</dt><dd>coarse ${q.n_rel.coarse.toLocaleString()} · fine ${q.n_rel.fine.toLocaleString()}</dd>
-      <dt>갤러리</dt><dd>${sub.n_gallery.toLocaleString()}장</dd>
-    </dl>`;
+    <div class="qlabel">쿼리</div>
+    <div class="qimg"><img src="${esc(q.img)}" alt="쿼리 이미지"></div>`;
 }
 
 function renderRows(sub) {
@@ -507,17 +498,10 @@ function renderRows(sub) {
     const hits = r.hits[S.crit];
     const nHit = [...hits].filter((h) => h === "1").length;
     const isBase = key === BASE;
-    const ap = r.ap[S.crit];
 
     const stats = [];
     stats.push(hits[0] === "1" ? `<span class="stat ok">1위 <b>정답</b></span>` : `<span class="stat">1위 <b>오답</b></span>`);
-    stats.push(`<span class="stat">top-10 정답 <b>${nHit}</b>개</span>`);
-    let apText = `<span class="stat">AP@10 <b>${ap.toFixed(3)}</b>`;
-    if (!isBase && base) {
-      const d = ap - base.ap[S.crit];
-      apText += Math.abs(d) < 5e-4 ? `<em class="d">±0</em>` : `<em class="d${d > 0 ? " up" : ""}">${d > 0 ? "▲" : "▼"}${Math.abs(d).toFixed(3)}</em>`;
-    }
-    stats.push(apText + "</span>");
+    stats.push(`<span class="stat">top-10 중 정답 <b>${nHit}</b>개</span>`);
     if (!isBase && base) {
       const overlap = r.rows.filter((row) => baseRank.has(row)).length;
       stats.push(`<span class="stat">DreamSim과 겹침 <b>${overlap}</b>/${r.rows.length}</span>`);
