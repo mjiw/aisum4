@@ -238,12 +238,6 @@ select { border: 1px solid var(--line-2); background: var(--bg); border-radius: 
 .ds { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--ink);
       border: 1px solid var(--ink-2); border-radius: 4px; padding: 0 4px; line-height: 15px; }
 .common { font-size: 10.5px; color: var(--muted); }
-.rkpill, .lg-rk { display: inline-block; font-size: 12px; font-weight: 800; border: 1px solid var(--ink);
-                  border-radius: 999px; padding: 0 8px; line-height: 20px; white-space: nowrap; }
-.rkpill small { font-weight: 500; color: var(--muted); margin-left: 1px; font-size: 11px; }
-.lg-rk { font-size: 11px; line-height: 16px; padding: 0 6px; }
-.note { font-size: 12.5px; color: var(--ink-2); background: var(--surface); border-radius: 8px;
-        padding: 10px 14px; }
 .empty { color: var(--muted); padding: 24px; text-align: center; border: 1px dashed var(--line-2);
          border-radius: var(--radius); }
 

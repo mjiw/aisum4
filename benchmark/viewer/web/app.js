@@ -20,12 +20,10 @@ const S = {
   subset: SUBSETS[0],
   qi: 0,
   picked: null,          // Set — 기준 모델 아래에 보여줄 모델
-  rk: "subset",          // 검색 결과 화면의 모델 순서: subset | query | default
   // 표는 처음부터 순위대로: 정확도는 R@1 높은 순, 속도는 1000장 처리 빠른 순
   sort: { acc: { col: "r1", dir: "desc" }, perf: { col: "t1000", dir: "asc" } },
 };
 const VIEWS = ["compare", "summary", "settings"];
-const RKS = [["subset", "서브셋 성능순"], ["query", "이 쿼리 성적순"], ["default", "기본"]];
 
 /* ---------------------------------------------------------------- 포맷 */
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
@@ -50,7 +48,6 @@ function readHash() {
   const p = new URLSearchParams(query || "");
   if (VIEWS.includes(view)) S.view = view;
   if (p.get("crit") === "coarse" || p.get("crit") === "fine") S.crit = p.get("crit");
-  if (RKS.some(([k]) => k === p.get("rk"))) S.rk = p.get("rk");
   if (p.has("scope") && (p.get("scope") === "all" || SUBSETS.includes(p.get("scope"))))
     S.scope = p.get("scope");
   if (p.has("subset") && SUBSETS.includes(p.get("subset"))) S.subset = p.get("subset");
@@ -65,7 +62,6 @@ function writeHash() {
   else if (S.view === "compare") {
     p.set("subset", S.subset);
     p.set("q", String(S.qi));
-    p.set("rk", S.rk);
     p.set("m", [...S.picked].join(","));
   }
   history.replaceState(null, "", `#${S.view}?${p.toString()}`);
@@ -437,7 +433,6 @@ function renderCompare() {
   }
   sel.value = S.subset;
   seg($("cmp-crit"), CRITS, S.crit, (v) => { S.crit = v; render(); });
-  seg($("cmp-sort"), RKS, S.rk, (v) => { S.rk = v; render(); });
   $("qpos").textContent = `${S.qi + 1} / ${sub.queries.length}`;
 
   renderChips(sub);
@@ -498,52 +493,11 @@ function renderQuery(sub) {
     </dl>`;
 }
 
-function subsetScore(key) {
-  const s = (D.summary[S.subset] || {})[key];
-  return s ? s[S.crit] : null;
-}
-
-/* 보이는 모델의 순서와 순위. 순위는 주 지표만으로 매기고(같으면 공동), 줄 순서는 보조 지표로 마저 가른다.
- *   subset: 이 서브셋 전체 쿼리의 R@1 → mAP@10
- *   query : 이 쿼리의 AP@10 → top-10 정답 수 → 서브셋 R@1 */
-function rankModels(keys, q) {
-  const score = (k) => {
-    const s = subsetScore(k);
-    const r1 = s ? s["recall@1"] : -1;
-    if (S.rk === "query") {
-      const r = q.res[k];
-      return [r.ap[S.crit], [...r.hits[S.crit]].filter((h) => h === "1").length, r1];
-    }
-    return [r1, s ? s["map@10"] : -1];
-  };
-  const sc = new Map(keys.map((k) => [k, score(k)]));
-  const sorted = keys.slice().sort((a, b) => {
-    const x = sc.get(a), y = sc.get(b);
-    for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return y[i] - x[i];
-    return 0;
-  });
-  const rank = new Map();
-  sorted.forEach((k, i) => {
-    const prev = sorted[i - 1];
-    rank.set(k, prev !== undefined && sc.get(prev)[0] === sc.get(k)[0] ? rank.get(prev) : i + 1);
-  });
-  return { sorted, rank };
-}
-
 function renderRows(sub) {
   const q = sub.queries[S.qi];
   const avail = new Set(sub.models);
-  let order = D.models.map((m) => m.key)
+  const order = D.models.map((m) => m.key)
     .filter((k) => avail.has(k) && (k === BASE || S.picked.has(k)));
-  // DreamSim은 비교 기준이라 늘 맨 위에 두고, 순위 표시는 똑같이 받는다
-  let rankOf = null;
-  // 정답이 하나도 없는 쿼리는 모든 모델의 AP가 0이라 '이 쿼리 성적순'이 의미가 없다
-  const noAnswer = S.rk === "query" && q.n_rel[S.crit] === 0;
-  if (S.rk !== "default" && !noAnswer) {
-    const { sorted, rank } = rankModels(order, q);
-    rankOf = rank;
-    order = [...sorted.filter((k) => k === BASE), ...sorted.filter((k) => k !== BASE)];
-  }
   const base = q.res[BASE];
   const baseRank = new Map(base ? base.rows.map((row, i) => [row, i + 1]) : []);
   const shownOthers = order.filter((k) => k !== BASE);
@@ -568,14 +522,6 @@ function renderRows(sub) {
       const overlap = r.rows.filter((row) => baseRank.has(row)).length;
       stats.push(`<span class="stat">DreamSim과 겹침 <b>${overlap}</b>/${r.rows.length}</span>`);
     }
-    const ss = subsetScore(key);
-    if (S.rk === "subset" && ss) {
-      stats.push(`<span class="stat">서브셋 R@1 <b>${pct(ss["recall@1"])}%</b></span>`);
-    }
-    const rkTip = S.rk === "query" ? "이 쿼리 AP@10 기준" : `${S.subset} 전체 쿼리 R@1 기준`;
-    const pill = rankOf
-      ? `<span class="rkpill" title="보이는 ${order.length}개 모델 중 · ${esc(rkTip)}">${rankOf.get(key)}위<small>/${order.length}</small></span>`
-      : "";
 
     const cards = r.rows.map((row, i) => {
       const g = sub.gallery[row] || { img: "", cat: "?", attrs: [] };
@@ -597,7 +543,7 @@ function renderRows(sub) {
     }).join("");
 
     return `<div class="mrow${isBase ? " is-base" : ""}">
-        <div class="mrow-head">${pill}<span class="mname">${esc(label(key))}</span>${isBase ? '<span class="tag">기준</span>' : ""}
+        <div class="mrow-head"><span class="mname">${esc(label(key))}</span>${isBase ? '<span class="tag">기준</span>' : ""}
           ${stats.join("")}</div>
         <div class="grid10">${cards}</div>
       </div>`;
@@ -605,9 +551,6 @@ function renderRows(sub) {
 
   if (!shownOthers.length) {
     blocks.push(`<div class="empty">위에서 비교할 모델을 고르면 DreamSim 아래에 나란히 표시됩니다.</div>`);
-  }
-  if (noAnswer) {
-    blocks.unshift(`<div class="note">이 쿼리는 갤러리에 ${S.crit} 기준 정답이 없어 모든 모델의 AP가 0입니다. 그래서 쿼리 성적순 순위를 매기지 않았습니다.</div>`);
   }
   $("rows").innerHTML = blocks.join("");
 }
