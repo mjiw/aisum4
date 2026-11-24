@@ -1,0 +1,49 @@
+{
+  "model": "tipsv2_l14",
+  "model_metadata": {
+    "model_id": "google/tipsv2-l14",
+    "image_size": 448,
+    "load_path": "from_pretrained"
+  },
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "torch": "2.14.0+cu130",
+  "transformers": "5.4.0",
+  "dataset": "lookbench",
+  "config": "real_studio_flat",
+  "split": "query",
+  "load_sec": 4.11,
+  "n_images": 200,
+  "batch_size": 16,
+  "input_shape": [
+    3,
+    448,
+    448
+  ],
+  "repeats": 3,
+  "runs_sec": [
+    6.0993,
+    6.1245,
+    6.1197
+  ],
+  "sec_per_1000": 30.599,
+  "images_per_sec": 32.68,
+  "preprocess_sec_per_1000": 4.545,
+  "gpu_sec_per_1000": 26.198,
+  "latency_ms_b1": 32.84,
+  "peak_vram_mb": 4348.0,
+  "peak_vram_reserved_mb": 4580.0,
+  "model_params": 487941120,
+  "model_size_mb": 1861.3,
+  "vision_tokens_per_image": 1024.0,
+  "llm_tokens_per_image": null,
+  "embed_dim": 1024,
+  "embedding_bytes": 4096,
+  "gallery_60k_mb": 234.4,
+  "timestamp": "2026-11-24T11:55:50",
+  "source": {
+    "branch": "test/tipsv2-l-14",
+    "commit": "3ce87c1acf095271724ef80c6dd842b219817509",
+    "run_branch": "feat/benchmark-viewer"
+  }
+}

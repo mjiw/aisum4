@@ -1,0 +1,54 @@
+{
+  "model": "mcip_so400m_14_384",
+  "model_metadata": {
+    "hf_id": "Visual-Computing-Group/MCIP-ViT-SO400M-14-SigLIP-384",
+    "revision": "b45cb24d1756b19976d5294a7ce3641cbecf9497",
+    "filename": "MCIP-ViT-SO400M-14-SigLIP-384.pth",
+    "open_clip_arch": "ViT-SO400M-14-SigLIP-384",
+    "pooling": "map (SigLIP attention pooling)",
+    "tower": "vision_only",
+    "image_size": 384,
+    "preprocess": "open_clip webli cfg {'mean': (0.5, 0.5, 0.5), 'std': (0.5, 0.5, 0.5), 'interpolation': 'bicubic', 'resize_mode': 'squash'}"
+  },
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "torch": "2.14.0+cu130",
+  "transformers": "5.4.0",
+  "dataset": "lookbench",
+  "config": "real_studio_flat",
+  "split": "query",
+  "load_sec": 10.4,
+  "n_images": 200,
+  "batch_size": 16,
+  "input_shape": [
+    3,
+    384,
+    384
+  ],
+  "repeats": 3,
+  "runs_sec": [
+    5.6556,
+    5.5346,
+    5.5455
+  ],
+  "sec_per_1000": 27.727,
+  "images_per_sec": 36.07,
+  "preprocess_sec_per_1000": 6.629,
+  "gpu_sec_per_1000": 21.367,
+  "latency_ms_b1": 31.04,
+  "peak_vram_mb": 2282.1,
+  "peak_vram_reserved_mb": 2574.0,
+  "model_params": 428225600,
+  "model_size_mb": 1633.6,
+  "vision_tokens_per_image": 729.0,
+  "llm_tokens_per_image": null,
+  "embed_dim": 1152,
+  "embedding_bytes": 4608,
+  "gallery_60k_mb": 263.7,
+  "timestamp": "2026-11-24T14:43:15",
+  "source": {
+    "branch": "test/mcip",
+    "commit": "1e0c98aeeaa27f3a8fcc233fe18d2fd4e7b11db1",
+    "run_branch": "test/mcip"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "model": "zooclaw_fashionsiglip2",
+  "model_metadata": {
+    "hf_id": "srpone/zooclaw-fashionsiglip2",
+    "revision": "c6b34b2a7b069855c2684979a196a7af61751797",
+    "pooling": "map",
+    "processor": "SiglipImageProcessor"
+  },
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "torch": "2.14.0+cu130",
+  "transformers": "5.4.0",
+  "dataset": "lookbench",
+  "config": "real_studio_flat",
+  "split": "query",
+  "load_sec": 5.05,
+  "n_images": 200,
+  "batch_size": 16,
+  "input_shape": [
+    3,
+    384,
+    384
+  ],
+  "repeats": 3,
+  "runs_sec": [
+    2.7437,
+    2.7897,
+    2.6169
+  ],
+  "sec_per_1000": 13.719,
+  "images_per_sec": 72.89,
+  "preprocess_sec_per_1000": 6.46,
+  "gpu_sec_per_1000": 3.652,
+  "latency_ms_b1": 16.63,
+  "peak_vram_mb": 719.9,
+  "peak_vram_reserved_mb": 862.0,
+  "model_params": 93176064,
+  "model_size_mb": 355.4,
+  "vision_tokens_per_image": 576.0,
+  "llm_tokens_per_image": null,
+  "embed_dim": 768,
+  "embedding_bytes": 3072,
+  "gallery_60k_mb": 175.8,
+  "timestamp": "2026-11-24T11:12:14",
+  "source": {
+    "branch": "test/zooclaw-fashionsiglip2",
+    "commit": "4221829bf38888287688e2900af9b41adc808912",
+    "run_branch": "test/zooclaw-fashionsiglip2"
+  }
+}

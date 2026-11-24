@@ -1,0 +1,61 @@
+{
+  "model": "wemm_embedding_2b",
+  "model_metadata": {
+    "hf_id": "tencent/WeMM-Embedding-2B",
+    "revision": "bbd6cd4bf52cfc6716f752a2df80b2706720bd95",
+    "pooling": "last_token(<embedding>)",
+    "instruction": null,
+    "input": "image_only",
+    "full_dim": 2048,
+    "mrl_dim": 1024,
+    "matryoshka_dimensions": [
+      64,
+      128,
+      256,
+      512,
+      1024,
+      2048
+    ],
+    "image_patch_size": 16,
+    "max_pixels": null,
+    "padding_side": "right",
+    "dtype": "bfloat16"
+  },
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "torch": "2.14.0+cu130",
+  "transformers": "5.4.0",
+  "dataset": "lookbench",
+  "config": "real_studio_flat",
+  "split": "query",
+  "load_sec": 6.69,
+  "n_images": 200,
+  "batch_size": 2,
+  "input_shape": null,
+  "repeats": 3,
+  "runs_sec": [
+    52.5857,
+    52.4548,
+    52.5666
+  ],
+  "sec_per_1000": 262.833,
+  "images_per_sec": 3.8,
+  "preprocess_sec_per_1000": null,
+  "gpu_sec_per_1000": null,
+  "latency_ms_b1": 266.71,
+  "peak_vram_mb": 7936.3,
+  "peak_vram_reserved_mb": 8532.0,
+  "model_params": 2720809792,
+  "model_size_mb": 5189.5,
+  "vision_tokens_per_image": 2385.0,
+  "llm_tokens_per_image": 602.2,
+  "embed_dim": 1024,
+  "embedding_bytes": 4096,
+  "gallery_60k_mb": 234.4,
+  "timestamp": "2026-11-24T15:14:26",
+  "source": {
+    "branch": "test/wemm-embedding",
+    "commit": "7ca9d73d30bf097d7224ff8a0356f003d9db22da",
+    "run_branch": "test/wemm-embedding"
+  }
+}

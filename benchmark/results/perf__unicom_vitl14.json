@@ -10,9 +10,11 @@
   "device": "cuda",
   "gpu": "NVIDIA GeForce RTX 4090",
   "torch": "2.14.0+cu130",
+  "transformers": "5.4.0",
   "dataset": "lookbench",
   "config": "real_studio_flat",
   "split": "query",
+  "load_sec": 7.92,
   "n_images": 200,
   "batch_size": 16,
   "input_shape": [
@@ -22,20 +24,28 @@
   ],
   "repeats": 3,
   "runs_sec": [
-    1.5554,
-    1.5046,
-    1.4501
+    1.3946,
+    1.3864,
+    1.4465
   ],
-  "sec_per_1000": 7.523,
-  "images_per_sec": 132.92,
-  "preprocess_sec_per_1000": 5.512,
-  "gpu_sec_per_1000": 1.834,
+  "sec_per_1000": 6.973,
+  "images_per_sec": 143.41,
+  "preprocess_sec_per_1000": 5.168,
+  "gpu_sec_per_1000": 1.825,
+  "latency_ms_b1": 19.4,
   "peak_vram_mb": 2330.3,
   "peak_vram_reserved_mb": 2380.0,
   "model_params": 572328448,
   "model_size_mb": 2183.3,
+  "vision_tokens_per_image": 256.0,
+  "llm_tokens_per_image": null,
   "embed_dim": 768,
   "embedding_bytes": 3072,
   "gallery_60k_mb": 175.8,
-  "timestamp": "2026-11-02T13:46:47"
+  "timestamp": "2026-11-24T12:35:54",
+  "source": {
+    "branch": "test/unicom",
+    "commit": "e57f777248522d6b729272100c64f2fac18fcc60",
+    "run_branch": "test/unicom"
+  }
 }

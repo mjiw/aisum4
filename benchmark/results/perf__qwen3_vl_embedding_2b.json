@@ -1,0 +1,52 @@
+{
+  "model": "qwen3_vl_embedding_2b",
+  "model_metadata": {
+    "hf_id": "Qwen/Qwen3-VL-Embedding-2B",
+    "revision": "9f2f7e710d6d81056aa5c0a4f04764fec6bb7bda",
+    "pooling": "last_token(eos)",
+    "instruction": "Represent the user's input.",
+    "input": "image_only",
+    "full_dim": 2048,
+    "mrl_dim": 1024,
+    "min_pixels": 4096,
+    "max_pixels": 1843200,
+    "dtype": "bfloat16"
+  },
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "torch": "2.14.0+cu130",
+  "transformers": "5.4.0",
+  "dataset": "lookbench",
+  "config": "real_studio_flat",
+  "split": "query",
+  "load_sec": 5.12,
+  "n_images": 200,
+  "batch_size": 8,
+  "input_shape": null,
+  "repeats": 3,
+  "runs_sec": [
+    20.5597,
+    20.4512,
+    20.3676
+  ],
+  "sec_per_1000": 102.256,
+  "images_per_sec": 9.78,
+  "preprocess_sec_per_1000": null,
+  "gpu_sec_per_1000": null,
+  "latency_ms_b1": 78.52,
+  "peak_vram_mb": 6834.2,
+  "peak_vram_reserved_mb": 8268.0,
+  "model_params": 2127532032,
+  "model_size_mb": 4057.9,
+  "vision_tokens_per_image": 2379.5,
+  "llm_tokens_per_image": 616.9,
+  "embed_dim": 1024,
+  "embedding_bytes": 4096,
+  "gallery_60k_mb": 234.4,
+  "timestamp": "2026-11-24T13:11:28",
+  "source": {
+    "branch": "test/qwen3-vl-embedding",
+    "commit": "f2204e3737353747d0469a4bfa4a1c74f129e15c",
+    "run_branch": "test/qwen3-vl-embedding"
+  }
+}

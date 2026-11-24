@@ -13,9 +13,11 @@
   "device": "cuda",
   "gpu": "NVIDIA GeForce RTX 4090",
   "torch": "2.14.0+cu130",
+  "transformers": "5.4.0",
   "dataset": "lookbench",
   "config": "real_studio_flat",
   "split": "query",
+  "load_sec": 18.49,
   "n_images": 200,
   "batch_size": 16,
   "input_shape": [
@@ -25,20 +27,28 @@
   ],
   "repeats": 3,
   "runs_sec": [
-    6.1557,
-    6.21,
-    6.1104
+    5.5422,
+    5.5563,
+    5.5472
   ],
-  "sec_per_1000": 30.779,
-  "images_per_sec": 32.49,
-  "preprocess_sec_per_1000": 10.808,
-  "gpu_sec_per_1000": 21.506,
+  "sec_per_1000": 27.736,
+  "images_per_sec": 36.05,
+  "preprocess_sec_per_1000": 6.266,
+  "gpu_sec_per_1000": 21.567,
+  "latency_ms_b1": 30.99,
   "peak_vram_mb": 5366.8,
   "peak_vram_reserved_mb": 5886.0,
   "model_params": 1239260211,
   "model_size_mb": 4727.4,
+  "vision_tokens_per_image": 729.0,
+  "llm_tokens_per_image": null,
   "embed_dim": 512,
   "embedding_bytes": 2048,
   "gallery_60k_mb": 117.2,
-  "timestamp": "2026-11-02T16:40:12"
+  "timestamp": "2026-11-24T14:48:37",
+  "source": {
+    "branch": "test/tianmu-mere",
+    "commit": "b4dbc0ce08f7a57d2bd3be620555f73b91c61753",
+    "run_branch": "test/tianmu-mere"
+  }
 }
