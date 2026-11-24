@@ -88,7 +88,9 @@
       "key": "wemm_embedding_2b",
       "label": "WeMM-Embedding-2B",
       "branch": "test/wemm-embedding",
-      "links": {"hf": "https://huggingface.co/tencent/WeMM-Embedding-2B"}
+      "links": {"hf": "https://huggingface.co/tencent/WeMM-Embedding-2B"},
+      "run_args": ["--batch-size", "2"],
+      "note": "원본 해상도 그대로 넣어 고해상도 실사 이미지에서 배치 8이 VRAM 상한(35%)을 넘음 → 배치 2로 실행 (aigen 서브셋은 그 전에 배치 8로 완료). 속도는 배치 2이고, 가속 커널(flash-linear-attention, causal-conv1d)이 없어 torch 기본 경로로 잰 값이라 실제보다 느리게 나옴"
     },
     {
       "key": "mcip_so400m_14_384",

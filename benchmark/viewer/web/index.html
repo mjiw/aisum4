@@ -18,7 +18,8 @@
     </div>
     <nav class="tabs" role="tablist" aria-label="화면">
       <button class="tab" role="tab" data-view="compare">검색 결과</button>
-      <button class="tab" role="tab" data-view="summary">성능 요약</button>
+      <button class="tab" role="tab" data-view="summary">성능 순위</button>
+      <button class="tab" role="tab" data-view="settings">실험 설정</button>
     </nav>
   </div>
 </header>
@@ -41,7 +42,7 @@
 
     <div class="card">
       <div class="card-head">
-        <h2>정확도</h2>
+        <h2>정확도 순위</h2>
         <p class="hint" id="acc-hint"></p>
       </div>
       <div class="scroll"><table class="tbl" id="acc-table"></table></div>
@@ -49,7 +50,7 @@
 
     <div class="card">
       <div class="card-head">
-        <h2>속도 · 자원</h2>
+        <h2>속도 · 자원 순위</h2>
         <p class="hint" id="perf-hint"></p>
       </div>
       <div class="scroll"><table class="tbl" id="perf-table"></table></div>
@@ -58,6 +59,8 @@
     <details class="card glossary">
       <summary>지표 설명</summary>
       <dl>
+        <dt>순위</dt>
+        <dd>표의 열 이름을 누르면 그 지표로 순위가 다시 매겨집니다. 기본은 정확도 R@1, 속도 1000장 처리 시간입니다. 값이 같으면 같은 순위입니다.</dd>
         <dt>coarse / fine</dt>
         <dd>coarse는 같은 카테고리면 정답, fine은 카테고리와 속성이 모두 같아야 정답입니다.</dd>
         <dt>R@1 · R@10</dt>
@@ -91,6 +94,10 @@
         <div class="seg" id="cmp-crit" role="group" aria-label="정답 기준"></div>
       </div>
       <div class="field">
+        <span class="field-label">모델 순서</span>
+        <div class="seg" id="cmp-sort" role="group" aria-label="모델 순서"></div>
+      </div>
+      <div class="field">
         <span class="field-label">쿼리</span>
         <div class="qnav">
           <button class="btn icon" id="prev" aria-label="이전 쿼리">‹</button>
@@ -122,8 +129,29 @@
       <span class="lg-sep"></span>
       <span class="lg-ds">D3</span> DreamSim도 찾은 이미지 (DreamSim 순위)
       <span class="lg-sep"></span>
+      <span class="lg-rk">2위</span> 보이는 모델 중 순위 (서브셋 성능순 = 이 서브셋 전체 쿼리 R@1, 이 쿼리 성적순 = 이 쿼리 AP@10)
+      <span class="lg-sep"></span>
       숫자는 코사인 유사도, <code>noise</code>는 공용 방해 이미지 풀입니다. ← → 키로 쿼리를 넘길 수 있습니다.
     </p>
+  </section>
+
+  <!-- ================================================= 실험 설정 -->
+  <section id="view-settings" class="view" hidden>
+    <div class="card first">
+      <div class="card-head">
+        <h2>공통 평가 조건</h2>
+        <p class="hint">모든 모델에 똑같이 적용한 조건입니다</p>
+      </div>
+      <div class="cond" id="common"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>모델별 설정</h2>
+        <p class="hint">평가 결과 파일에 기록된 실제 실행값입니다 · 모델마다 다른 값만 이 표에 있습니다</p>
+      </div>
+      <div class="scroll"><table class="tbl settings" id="set-table"></table></div>
+    </div>
   </section>
 
   <footer class="foot" id="foot"></footer>

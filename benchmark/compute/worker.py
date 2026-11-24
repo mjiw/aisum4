@@ -20,10 +20,15 @@ import json
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime
 
 from benchmark.compute import adapters, artifacts, load_lineup, model_spec, results_dir
 from benchmark.compute import worktree as wt
+
+# HF Hub 연결이 잠깐 끊기면 모델 로딩에서 바로 죽는다. 일시적인 실패라 한 번 더 해 본다.
+RETRIES = 1
+RETRY_WAIT = 30
 
 
 def say(msg: str):
@@ -93,22 +98,40 @@ def run(key: str, subsets: list, profile: bool = True, force: bool = False,
     say(f"{key}: origin/{spec['branch']} ({source['commit'][:7]})"
         + (f" — host {run_branch} 위에 어댑터 '{spec['adapter']}'" if spec.get("adapter") else ""))
 
+    # 모델별 추가 인자 (예: 메모리가 부족한 모델의 --batch-size). run_eval·profile_perf 공통
+    extra = [str(a) for a in spec.get("run_args", [])]
     worktree = wt.add_worktree(run_branch, overlay=adapters.overlay_for(spec))
     failed = 0
     try:
-        for subset in todo:
-            job = ["-m", "benchmark.run_eval", "--model", key,
-                   "--dataset", "lookbench", "--config", subset]
-            if force_encode:
-                job.append("--force-encode")
-            code = _run(job, worktree)
-            if code:
-                failed |= code
-                continue
-            out = artifacts.build(key, subset, source=source)
-            say(f"결과물 저장: {out.name}")
+        pending = list(todo)
+        for attempt in range(1, RETRIES + 2):
+            if attempt > 1:
+                say(f"실패한 서브셋 다시 시도 ({attempt - 1}/{RETRIES}): {', '.join(pending)}")
+                time.sleep(RETRY_WAIT)
+            retry = []
+            for subset in pending:
+                job = ["-m", "benchmark.run_eval", "--model", key,
+                       "--dataset", "lookbench", "--config", subset, *extra]
+                if force_encode:
+                    job.append("--force-encode")
+                if _run(job, worktree):
+                    retry.append(subset)
+                    continue
+                out = artifacts.build(key, subset, source=source)
+                say(f"결과물 저장: {out.name}")
+            pending = retry
+            if not pending:
+                break
+        if pending:
+            failed = 1
+            say(f"{key}: 끝내 실패한 서브셋 — {', '.join(pending)}")
         if need_perf:
-            code = _run(["-m", "benchmark.profile_perf", "--model", key], worktree)
+            perf_job = ["-m", "benchmark.profile_perf", "--model", key, *extra]
+            code = _run(perf_job, worktree)
+            if code:
+                say(f"속도 측정 다시 시도 ({RETRY_WAIT}초 뒤)")
+                time.sleep(RETRY_WAIT)
+                code = _run(perf_job, worktree)
             failed |= code
             if not code:
                 _stamp_perf(key, source)

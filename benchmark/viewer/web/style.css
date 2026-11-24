@@ -107,9 +107,12 @@ select { border: 1px solid var(--line-2); background: var(--bg); border-radius: 
 .tbl th, .tbl td { padding: 10px 16px; text-align: right; border-top: 1px solid var(--line); }
 .tbl th:first-child, .tbl td:first-child { text-align: left; }
 .tbl thead th { border-top: 0; font-size: 12px; color: var(--muted); font-weight: 600;
-                padding-top: 4px; padding-bottom: 8px; cursor: pointer; user-select: none; }
-.tbl thead th:first-child { cursor: default; }
-.tbl thead th:hover:not(:first-child) { color: var(--ink); }
+                padding-top: 4px; padding-bottom: 8px; user-select: none; }
+.tbl thead th[data-col] { cursor: pointer; }
+.tbl thead th[data-col]:hover { color: var(--ink); }
+.tbl .l { text-align: left; }
+.tbl .rk { text-align: left; width: 1%; padding-right: 0; color: var(--muted); font-weight: 700; }
+.tbl .rk.top { color: var(--ink); }
 .tbl thead th .arr { display: inline-block; width: 10px; color: var(--ink); }
 .tbl tr.is-base td { background: var(--surface); }
 .tbl tr.is-missing td { color: var(--faint); }
@@ -140,6 +143,30 @@ select { border: 1px solid var(--line-2); background: var(--bg); border-radius: 
 .wtl-bar .l { background: transparent; }
 .wtl-txt { font-size: 11.5px; color: var(--muted); }
 .wtl-txt b { color: var(--ink); }
+
+/* ------------------------------------------------------------- 실험 설정 */
+.view > .card.first { margin-top: 20px; }
+.cond { padding: 2px 16px 16px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 10px 22px; margin: 0; font-size: 13px; }
+.kv dt { color: var(--muted); font-weight: 600; }
+.kv dd { margin: 0; color: var(--ink-2); min-width: 0; overflow-x: auto; }
+.kv.small { font-size: 12px; gap: 3px 12px; margin: 6px 0 2px; }
+.kv.small dd { word-break: break-word; }
+.mini { border-collapse: collapse; font-size: 12.5px; }
+.mini th, .mini td { padding: 2px 0 2px 22px; text-align: right; white-space: nowrap; }
+.mini th { color: var(--muted); font-weight: 600; }
+.mini .l { text-align: left; padding-left: 0; }
+.muted { color: var(--muted); font-size: 12px; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.tbl.settings { white-space: normal; font-size: 13px; }
+.tbl.settings th, .tbl.settings td { text-align: left; vertical-align: top; }
+.tbl.settings td { min-width: 96px; }
+.tbl.settings td:first-child { min-width: 200px; }
+.tbl.settings td.ck { min-width: 210px; word-break: break-all; }
+.tbl.settings td.nt { min-width: 240px; max-width: 360px; }
+.tbl.settings details { margin-top: 4px; }
+.tbl.settings summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+.tbl.settings summary:hover { color: var(--ink); }
 
 .glossary { padding: 0 16px; }
 .glossary summary { cursor: pointer; padding: 14px 0; font-weight: 650; }
@@ -211,6 +238,12 @@ select { border: 1px solid var(--line-2); background: var(--bg); border-radius: 
 .ds { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--ink);
       border: 1px solid var(--ink-2); border-radius: 4px; padding: 0 4px; line-height: 15px; }
 .common { font-size: 10.5px; color: var(--muted); }
+.rkpill, .lg-rk { display: inline-block; font-size: 12px; font-weight: 800; border: 1px solid var(--ink);
+                  border-radius: 999px; padding: 0 8px; line-height: 20px; white-space: nowrap; }
+.rkpill small { font-weight: 500; color: var(--muted); margin-left: 1px; font-size: 11px; }
+.lg-rk { font-size: 11px; line-height: 16px; padding: 0 6px; }
+.note { font-size: 12.5px; color: var(--ink-2); background: var(--surface); border-radius: 8px;
+        padding: 10px 14px; }
 .empty { color: var(--muted); padding: 24px; text-align: center; border: 1px dashed var(--line-2);
          border-radius: var(--radius); }
 
@@ -246,4 +279,7 @@ select { border: 1px solid var(--line-2); background: var(--bg); border-radius: 
   .tile { padding: 10px 12px; }
   .tile-v { font-size: 15px; }
   .tbl th, .tbl td { padding: 9px 12px; }
+  .kv { grid-template-columns: 1fr; gap: 2px; }
+  .kv dd { margin-bottom: 10px; }
+  .mini th, .mini td { padding-left: 12px; }
 }

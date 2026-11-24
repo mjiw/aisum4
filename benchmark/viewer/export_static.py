@@ -132,6 +132,106 @@ def load_perf(key: str) -> dict:
     return {k: perf.get(k) for k in keep if k in perf}
 
 
+def _result_json(key: str, subset: str) -> dict:
+    path = results_dir() / f"{key}__lookbench-{subset}.json"
+    if not path.exists():
+        return {}
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _clean(value):
+    """브랜치 쪽에서 깨진 인코딩으로 저장된 글자(U+FFFD)를 걷어낸다."""
+    if isinstance(value, str):
+        text = value.replace("�", "").replace(" )", ")").replace("()", "")
+        return " ".join(text.split())
+    if isinstance(value, dict):
+        return {k: _clean(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_clean(v) for v in value]
+    return value
+
+
+def _input_desc(meta: dict, perf: dict) -> str:
+    shape = perf.get("input_shape")
+    if shape and len(shape) == 3:
+        return f"{shape[1]}×{shape[2]}"
+    size = meta.get("image_size")
+    if isinstance(size, int):
+        return f"{size}×{size}"
+    if isinstance(size, dict) and "height" in size:
+        return f"{size['height']}×{size['width']}"
+    if "max_pixels" in meta:                     # VLM: 원본 비율 그대로, 픽셀 수만 제한
+        hi = meta.get("max_pixels")
+        if hi is None:
+            return "원본 해상도 (상한 없음)"
+        lo = meta.get("min_pixels")
+        return f"가변 해상도 ({lo or 0:,}~{hi:,} px)"
+    return ""
+
+
+# 표에 따로 보여주는 항목. 나머지는 '상세'로 접어 둔다.
+_SHOWN = {"hf_id", "model_id", "revision", "pooling", "image_size", "max_pixels",
+          "min_pixels", "dreamsim_type", "full_dim", "mrl_dim"}
+
+
+def load_settings(spec: dict, subsets: list, perf: dict) -> dict:
+    """평가에 실제로 쓰인 설정. 결과 JSON(run, model_metadata)과 perf JSON에서 모은다."""
+    key = spec["key"]
+    runs, meta, dim = {}, {}, None
+    for subset in subsets:
+        res = _result_json(key, subset)
+        if not res:
+            continue
+        run = res.get("run", {})
+        runs[subset] = {"batch": run.get("batch_size"), "vram": run.get("gpu_memory_fraction"),
+                        "device": run.get("device"), "when": run.get("timestamp")}
+        meta = res.get("model_metadata") or meta
+        dim = res.get("embed_dim", dim)
+    meta = _clean(meta)
+    checkpoint = meta.get("hf_id") or meta.get("model_id") or ""
+    pooling = meta.get("pooling")
+    if not pooling and meta.get("dreamsim_type"):
+        pooling = f"DreamSim {meta['dreamsim_type']} (DINO·CLIP·OpenCLIP 특징 연결)"
+    return {
+        "checkpoint": checkpoint,
+        "revision": (meta.get("revision") or "")[:7],
+        "input": _input_desc(meta, perf),
+        "dtype": meta.get("dtype"),
+        "pooling": pooling,
+        "embed_dim": dim,
+        "full_dim": meta.get("full_dim"),
+        "runs": runs,
+        "perf_batch": perf.get("batch_size"),
+        "run_args": [str(a) for a in spec.get("run_args", [])],
+        "adapter": spec.get("adapter"),
+        "extra": {k: v for k, v in meta.items() if k not in _SHOWN},
+    }
+
+
+def eval_conditions(results: dict) -> dict:
+    """모든 모델에 공통인 평가 조건 (데이터셋 config + 결과물에서 확인한 값)."""
+    from benchmark import profile_perf as pp
+
+    cfg = json.loads((REPO / "benchmark" / "config.json").read_text(encoding="utf-8"))
+    ds = cfg["datasets"]["lookbench"]
+    subsets = {}
+    for subset, found in results.items():
+        info = next(iter(found.values()))["info"]
+        subsets[subset] = {"n_queries": info["n_queries"], "n_gallery": info["n_gallery"],
+                           "n_subset_gallery": info["n_subset_gallery"]}
+    noise = {s["n_gallery"] - s["n_subset_gallery"] for s in subsets.values()}
+    return {
+        "subsets": subsets,
+        "noise": noise.pop() if len(noise) == 1 else None,
+        "topk": ds["topk"], "k_values": ds["k_values"], "fine_mode": ds["fine_mode"],
+        "vram_cap": cfg["eval"].get("gpu_memory_fraction"),
+        "perf": {"config": pp.DEFAULT_CONFIG, "n_images": pp.DEFAULT_N, "repeats": pp.REPEATS,
+                 "warmup_batches": pp.WARMUP_BATCHES, "latency_n": pp.LATENCY_N,
+                 "token_n": pp.TOKEN_N},
+    }
+
+
 def _stats(per_query: list) -> dict:
     """여러 서브셋의 쿼리별 값을 이어붙여 전체 지표를 낸다 (= 쿼리 수 가중 평균)."""
     out = {"n_queries": int(sum(len(p["ap_coarse"]) for p in per_query))}
@@ -287,13 +387,16 @@ def main():
         key = spec["key"]
         src = next((results[s][key]["info"].get("source", {})
                     for s in results if key in results[s]), {})
+        have = [s for s in results if key in results[s]]
+        perf = load_perf(key)
         models.append({
             "key": key, "label": spec["label"], "note": spec.get("note", ""),
             "links": spec.get("links", {}), "branch": spec["branch"],
             "commit": (src.get("commit") or "")[:7],
             "baseline": key == lineup["baseline"],
-            "subsets": [s for s in results if key in results[s]],
-            "perf": load_perf(key),
+            "subsets": have,
+            "perf": perf,
+            "settings": load_settings(spec, have, perf),
         })
 
     bundle = {
@@ -305,6 +408,7 @@ def main():
             "topk": first["topk"],
             "queries_per_subset": args.queries,
             "select": args.select,
+            "eval": eval_conditions(results),
         },
         "models": models,
         "summary": build_summary(lineup, results),

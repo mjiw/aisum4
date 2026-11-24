@@ -20,8 +20,12 @@ const S = {
   subset: SUBSETS[0],
   qi: 0,
   picked: null,          // Set — 기준 모델 아래에 보여줄 모델
-  sort: { acc: null, perf: null },
+  rk: "subset",          // 검색 결과 화면의 모델 순서: subset | query | default
+  // 표는 처음부터 순위대로: 정확도는 R@1 높은 순, 속도는 1000장 처리 빠른 순
+  sort: { acc: { col: "r1", dir: "desc" }, perf: { col: "t1000", dir: "asc" } },
 };
+const VIEWS = ["compare", "summary", "settings"];
+const RKS = [["subset", "서브셋 성능순"], ["query", "이 쿼리 성적순"], ["default", "기본"]];
 
 /* ---------------------------------------------------------------- 포맷 */
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
@@ -44,8 +48,9 @@ function deltaPP(v, b) {
 function readHash() {
   const [view, query] = location.hash.replace(/^#\/?/, "").split("?");
   const p = new URLSearchParams(query || "");
-  if (view === "compare" || view === "summary") S.view = view;
+  if (VIEWS.includes(view)) S.view = view;
   if (p.get("crit") === "coarse" || p.get("crit") === "fine") S.crit = p.get("crit");
+  if (RKS.some(([k]) => k === p.get("rk"))) S.rk = p.get("rk");
   if (p.has("scope") && (p.get("scope") === "all" || SUBSETS.includes(p.get("scope"))))
     S.scope = p.get("scope");
   if (p.has("subset") && SUBSETS.includes(p.get("subset"))) S.subset = p.get("subset");
@@ -55,11 +60,12 @@ function readHash() {
 
 function writeHash() {
   const p = new URLSearchParams();
-  p.set("crit", S.crit);
+  if (S.view !== "settings") p.set("crit", S.crit);
   if (S.view === "summary") p.set("scope", S.scope);
-  else {
+  else if (S.view === "compare") {
     p.set("subset", S.subset);
     p.set("q", String(S.qi));
+    p.set("rk", S.rk);
     p.set("m", [...S.picked].join(","));
   }
   history.replaceState(null, "", `#${S.view}?${p.toString()}`);
@@ -92,48 +98,62 @@ function seg(el, items, current, onPick) {
 function setView(view) {
   S.view = view;
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("is-on", t.dataset.view === view));
-  $("view-summary").hidden = view !== "summary";
-  $("view-compare").hidden = view !== "compare";
+  VIEWS.forEach((v) => { $(`view-${v}`).hidden = v !== view; });
   render();
 }
 
 function render() {
   if (S.view === "summary") renderSummary();
+  else if (S.view === "settings") renderSettings();
   else renderCompare();
   writeHash();
 }
 
-function modelCell(m) {
+function modelCell(m, withBranch = true) {
   const links = Object.entries(m.links || {}).map(([k, url]) => {
     const name = { paper: "논문", hf: "HF", code: "코드", blog: "블로그", bench: "LookBench" }[k] || k;
     return `<a href="${esc(url)}" target="_blank" rel="noopener">${name}</a>`;
   });
   const tag = m.baseline ? '<span class="tag">기준</span>' : "";
+  const br = withBranch
+    ? `<span class="br" title="평가에 쓴 브랜치">${esc(m.branch)}${m.commit ? "@" + esc(m.commit) : ""}</span>` : "";
   return `<div class="mcell"><span class="mname">${esc(m.label)}${tag}</span>
-    <span class="mlinks"><span class="br" title="평가에 쓴 브랜치">${esc(m.branch)}${m.commit ? "@" + esc(m.commit) : ""}</span>${links.join("")}</span></div>`;
+    <span class="mlinks">${br}${links.join("")}</span></div>`;
 }
 
-/* 표 정렬: 기준 모델은 항상 맨 위. 같은 열을 다시 누르면 방향이 바뀐다. */
+/* 표 정렬 = 순위. 기준 모델(DreamSim)도 제자리에서 순위를 받는다(줄 배경으로 구분).
+ * 값이 없는 모델은 맨 아래. 같은 값이면 같은 순위(1, 2, 2, 4). 같은 열을 다시 누르면 방향이 바뀐다. */
 function sortRows(rows, table, cols) {
   const st = S.sort[table];
-  const base = rows.filter((r) => r.m.baseline);
-  const rest = rows.filter((r) => !r.m.baseline);
-  if (st) {
-    const col = cols.find((c) => c.id === st.col);
-    rest.sort((a, b) => {
-      const va = col.get(a), vb = col.get(b);
+  const col = st && cols.find((c) => c.id === st.col);
+  const val = (r) => (col ? col.get(r) : null);
+  const out = rows.slice();
+  if (col) {
+    out.sort((a, b) => {
+      const va = val(a), vb = val(b);
       if (!isNum(va) && !isNum(vb)) return 0;
       if (!isNum(va)) return 1;
       if (!isNum(vb)) return -1;
       return st.dir === "asc" ? va - vb : vb - va;
     });
   }
-  return [...base, ...rest];
+  let prev = null, rank = 0;
+  out.forEach((r, i) => {
+    const v = val(r);
+    if (!isNum(v)) { r.rank = null; return; }
+    if (v !== prev) { rank = i + 1; prev = v; }
+    r.rank = rank;
+  });
+  return out;
+}
+
+function rankCell(r) {
+  return `<td class="rk${r.rank === 1 ? " top" : ""}">${r.rank ?? "—"}</td>`;
 }
 
 function headRow(table, cols) {
   const st = S.sort[table];
-  return `<thead><tr><th>모델</th>${cols.map((c) => {
+  return `<thead><tr><th class="rk" title="누른 열 기준 순위">순위</th><th class="l">모델</th>${cols.map((c) => {
     const arr = st && st.col === c.id ? (st.dir === "asc" ? "↑" : "↓") : "";
     return `<th data-col="${c.id}" title="${esc(c.tip || "누르면 정렬")}">${esc(c.name)} <span class="arr">${arr}</span></th>`;
   }).join("")}</tr></thead>`;
@@ -175,7 +195,7 @@ function renderSummary() {
   renderPerf();
 
   $("acc-hint").textContent = nq
-    ? `${scopeName(S.scope)} 쿼리 ${nq.toLocaleString()}개 전부로 계산 · 단위 % · ▲▼는 DreamSim 대비 %p`
+    ? `${scopeName(S.scope)} 쿼리 ${nq.toLocaleString()}개 전부로 계산 · 단위 % · ▲▼는 DreamSim 대비 %p · 열 이름을 누르면 그 지표 기준으로 순위가 바뀝니다`
     : "이 서브셋 결과가 없습니다";
 }
 
@@ -221,7 +241,7 @@ function renderAccuracy(rows, base) {
 
   const body = sortRows(rows, "acc", cols).map((r) => {
     if (!r.s) {
-      return `<tr class="is-missing"><td>${modelCell(r.m)}</td><td colspan="${cols.length}">결과 없음 (아직 실행 전)</td></tr>`;
+      return `<tr class="is-missing">${rankCell(r)}<td class="l">${modelCell(r.m)}</td><td colspan="${cols.length}">결과 없음 (아직 실행 전)</td></tr>`;
     }
     const cells = cols.slice(0, 3).map((c) => {
       const v = c.get(r);
@@ -240,7 +260,7 @@ function renderAccuracy(rows, base) {
     } else if (r.m.baseline) {
       vs = `<td><span class="wtl-txt">기준</span></td>`;
     }
-    return `<tr class="${r.m.baseline ? "is-base" : ""}"><td>${modelCell(r.m)}</td>${cells.join("")}${vs}</tr>`;
+    return `<tr class="${r.m.baseline ? "is-base" : ""}">${rankCell(r)}<td class="l">${modelCell(r.m)}</td>${cells.join("")}${vs}</tr>`;
   }).join("");
 
   const el = $("acc-table");
@@ -275,10 +295,10 @@ function renderPerf() {
   const rows = D.models.map((m) => ({ m, p: m.perf || {} }));
   const body = sortRows(rows, "perf", cols).map((r) => {
     if (!isNum(r.p.sec_per_1000)) {
-      return `<tr class="is-missing"><td>${modelCell(r.m)}</td><td colspan="${cols.length}">측정 전</td></tr>`;
+      return `<tr class="is-missing">${rankCell(r)}<td class="l">${modelCell(r.m)}</td><td colspan="${cols.length}">측정 전</td></tr>`;
     }
     const cells = cols.map((c) => `<td>${c.fmt(c.get(r), r)}</td>`).join("");
-    return `<tr class="${r.m.baseline ? "is-base" : ""}"><td>${modelCell(r.m)}</td>${cells}</tr>`;
+    return `<tr class="${r.m.baseline ? "is-base" : ""}">${rankCell(r)}<td class="l">${modelCell(r.m)}</td>${cells}</tr>`;
   }).join("");
   const el = $("perf-table");
   el.innerHTML = headRow("perf", cols) + `<tbody>${body}</tbody>`;
@@ -292,6 +312,111 @@ function renderPerf() {
     ? `${gpus.join(", ") || "GPU"} · ${measured[0].config} 쿼리 ${n}장 · 배치 ${batches.join("/")} (모델 설정값) · ×는 DreamSim 대비, 굵으면 더 빠름` +
       (gpus.length > 1 ? " · ⚠ 측정 GPU가 서로 다릅니다" : "")
     : "측정값이 없습니다";
+}
+
+/* ---------------------------------------------------------------- 실험 설정 */
+const uniq = (xs) => [...new Set(xs.filter((x) => x !== null && x !== undefined && x !== ""))];
+const n0 = (v) => (isNum(v) ? v.toLocaleString() : "—");
+
+function renderCommon() {
+  const ev = D.meta.eval || {};
+  const ds = D.meta.dataset;
+  const pf = ev.perf || {};
+  const measured = D.models.map((m) => m.perf || {}).filter((p) => isNum(p.sec_per_1000));
+  const caps = uniq(D.models.flatMap((m) => Object.values((m.settings || {}).runs || {}).map((r) => r.vram)));
+  const env = [
+    uniq(measured.map((p) => p.gpu)).join(", ") || "GPU",
+    `torch ${uniq(measured.map((p) => p.torch)).join(", ") || "—"}`,
+    `transformers ${uniq(measured.map((p) => p.transformers)).join(", ") || "—"}`,
+    caps.length ? `VRAM 상한 ${caps.map((c) => `${Math.round(c * 100)}%`).join(" / ")} (프로세스당)` : "",
+  ].filter(Boolean).join(" · ");
+  const subRows = Object.entries(ev.subsets || {}).map(([k, s]) =>
+    `<tr><td class="l">${esc(k)}</td><td>${n0(s.n_queries)}</td><td>${n0(s.n_subset_gallery)}</td><td>${n0(s.n_gallery)}</td></tr>`
+  ).join("");
+
+  const items = [
+    ["데이터셋", `<a href="${esc(ds.url)}" target="_blank" rel="noopener">${esc(ds.name)}</a>
+      · revision <code>${esc((ds.revision || "").slice(0, 7))}</code>`],
+    ["서브셋", `<table class="mini"><thead><tr><th class="l">서브셋</th><th>쿼리</th><th>서브셋 갤러리</th>
+      <th title="서브셋 갤러리 + noise">전체 갤러리</th></tr></thead><tbody>${subRows}</tbody></table>`],
+    ["갤러리", `서브셋 갤러리 + 공용 방해 이미지(noise) ${n0(ev.noise)}장 · noise는 항상 오답으로 칩니다`],
+    ["정답 기준", `<b>coarse</b> 같은 카테고리면 정답 · <b>fine</b> 카테고리와 속성 집합이 완전히 같아야 정답 (${esc(ev.fine_mode || "")})`],
+    ["검색", `임베딩을 L2 정규화한 뒤 코사인 유사도로 갤러리 전체와 비교해 상위 ${ev.topk ?? 10}개 (근사 검색 없음)`],
+    ["지표", `R@1 · R@10 · mAP@10 — 서브셋의 모든 쿼리로 계산하고, '전체'는 네 서브셋 쿼리를 합쳐 계산`],
+    ["실행 환경", `${esc(env)} · 한 번에 한 모델만 GPU를 씁니다`],
+    ["속도 측정", `${esc(pf.config || "")} 쿼리 ${n0(pf.n_images)}장을 모델별 배치로 ${pf.repeats ?? "—"}번 처리한 중앙값
+      (워밍업 ${pf.warmup_batches ?? "—"}배치) · 쿼리 1장 = 배치 1로 ${n0(pf.latency_n)}장 잰 중앙값
+      · 이미지 토큰 = ${n0(pf.token_n)}장 평균 · 모든 모델이 같은 이미지로 잽니다`],
+  ];
+  $("common").innerHTML = `<dl class="kv">${items.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+}
+
+function batchCell(st) {
+  const runs = st.runs || {};
+  const groups = {};
+  Object.entries(runs).forEach(([sub, r]) => { (groups[r.batch] = groups[r.batch] || []).push(sub); });
+  const keys = Object.keys(groups);
+  let evalHtml = "—";
+  if (keys.length === 1) evalHtml = `<b>${esc(keys[0])}</b>`;
+  else if (keys.length > 1) {
+    evalHtml = keys.map((b) => `<div><b>${esc(b)}</b> <span class="muted">${groups[b].map(esc).join(", ")}</span></div>`).join("");
+  }
+  const perf = isNum(st.perf_batch) ? `<div class="muted">속도 측정 ${st.perf_batch}</div>` : "";
+  return evalHtml + perf;
+}
+
+function ckptCell(st) {
+  const id = st.checkpoint || "";
+  const ex = st.extra || {};
+  let main;
+  if (/^[\w.-]+\/[\w.-]+$/.test(id)) {
+    main = `<a href="https://huggingface.co/${esc(id)}" target="_blank" rel="noopener">${esc(id)}</a>`;
+  } else if (id) {
+    main = esc(id);
+  } else {
+    main = esc([ex.source, ex.checkpoint || ex.filename].filter(Boolean).join(" · ")) || '<span class="muted">패키지 기본 가중치</span>';
+  }
+  return main + (st.revision ? `<div class="muted mono">@${esc(st.revision)}</div>` : "");
+}
+
+function fmtVal(v) {
+  if (v === null) return "없음";
+  if (typeof v === "object") return esc(JSON.stringify(v).replace(/[{}"]/g, "").replace(/,/g, ", ").replace(/:/g, ": "));
+  return esc(v);
+}
+
+function renderSettings() {
+  renderCommon();
+  const head = `<thead><tr><th>모델</th><th>입력 해상도</th><th>배치</th><th>임베딩 차원</th>
+    <th>풀링</th><th>가중치</th><th>코드</th><th>비고</th></tr></thead>`;
+  const body = D.models.map((m) => {
+    const st = m.settings || {};
+    if (!Object.keys(st.runs || {}).length) {
+      return `<tr class="is-missing"><td>${modelCell(m, false)}</td><td colspan="7">결과 없음 (아직 실행 전)</td></tr>`;
+    }
+    const dim = isNum(st.embed_dim) ? `<b>${st.embed_dim}</b>` +
+      (isNum(st.full_dim) && st.full_dim !== st.embed_dim ? `<div class="muted">MRL로 줄임 (원래 ${st.full_dim})</div>` : "") : "—";
+    const code = `<span class="mono">${esc(m.branch)}${m.commit ? "@" + esc(m.commit) : ""}</span>` +
+      (st.adapter ? `<div class="muted">어댑터 '${esc(st.adapter)}' — 기준 브랜치 위에서 실행</div>` : "");
+    const extra = Object.entries(st.extra || {});
+    const notes = [
+      m.note ? `<div>${esc(m.note)}</div>` : "",
+      st.run_args && st.run_args.length ? `<div><code>${esc(st.run_args.join(" "))}</code></div>` : "",
+      extra.length ? `<details><summary>모델 상세 ${extra.length}개</summary><dl class="kv small">${
+        extra.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${fmtVal(v)}</dd>`).join("")}</dl></details>` : "",
+    ].join("") || '<span class="muted">—</span>';
+    return `<tr class="${m.baseline ? "is-base" : ""}">
+      <td>${modelCell(m, false)}</td>
+      <td>${esc(st.input || "—")}</td>
+      <td>${batchCell(st)}</td>
+      <td>${dim}</td>
+      <td>${esc(st.pooling || "—")}</td>
+      <td class="ck">${ckptCell(st)}</td>
+      <td>${code}</td>
+      <td class="nt">${notes}</td>
+    </tr>`;
+  }).join("");
+  $("set-table").innerHTML = head + `<tbody>${body}</tbody>`;
 }
 
 /* ---------------------------------------------------------------- 검색 결과 */
@@ -312,6 +437,7 @@ function renderCompare() {
   }
   sel.value = S.subset;
   seg($("cmp-crit"), CRITS, S.crit, (v) => { S.crit = v; render(); });
+  seg($("cmp-sort"), RKS, S.rk, (v) => { S.rk = v; render(); });
   $("qpos").textContent = `${S.qi + 1} / ${sub.queries.length}`;
 
   renderChips(sub);
@@ -372,11 +498,52 @@ function renderQuery(sub) {
     </dl>`;
 }
 
+function subsetScore(key) {
+  const s = (D.summary[S.subset] || {})[key];
+  return s ? s[S.crit] : null;
+}
+
+/* 보이는 모델의 순서와 순위. 순위는 주 지표만으로 매기고(같으면 공동), 줄 순서는 보조 지표로 마저 가른다.
+ *   subset: 이 서브셋 전체 쿼리의 R@1 → mAP@10
+ *   query : 이 쿼리의 AP@10 → top-10 정답 수 → 서브셋 R@1 */
+function rankModels(keys, q) {
+  const score = (k) => {
+    const s = subsetScore(k);
+    const r1 = s ? s["recall@1"] : -1;
+    if (S.rk === "query") {
+      const r = q.res[k];
+      return [r.ap[S.crit], [...r.hits[S.crit]].filter((h) => h === "1").length, r1];
+    }
+    return [r1, s ? s["map@10"] : -1];
+  };
+  const sc = new Map(keys.map((k) => [k, score(k)]));
+  const sorted = keys.slice().sort((a, b) => {
+    const x = sc.get(a), y = sc.get(b);
+    for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return y[i] - x[i];
+    return 0;
+  });
+  const rank = new Map();
+  sorted.forEach((k, i) => {
+    const prev = sorted[i - 1];
+    rank.set(k, prev !== undefined && sc.get(prev)[0] === sc.get(k)[0] ? rank.get(prev) : i + 1);
+  });
+  return { sorted, rank };
+}
+
 function renderRows(sub) {
   const q = sub.queries[S.qi];
   const avail = new Set(sub.models);
-  const order = D.models.map((m) => m.key)
+  let order = D.models.map((m) => m.key)
     .filter((k) => avail.has(k) && (k === BASE || S.picked.has(k)));
+  // DreamSim은 비교 기준이라 늘 맨 위에 두고, 순위 표시는 똑같이 받는다
+  let rankOf = null;
+  // 정답이 하나도 없는 쿼리는 모든 모델의 AP가 0이라 '이 쿼리 성적순'이 의미가 없다
+  const noAnswer = S.rk === "query" && q.n_rel[S.crit] === 0;
+  if (S.rk !== "default" && !noAnswer) {
+    const { sorted, rank } = rankModels(order, q);
+    rankOf = rank;
+    order = [...sorted.filter((k) => k === BASE), ...sorted.filter((k) => k !== BASE)];
+  }
   const base = q.res[BASE];
   const baseRank = new Map(base ? base.rows.map((row, i) => [row, i + 1]) : []);
   const shownOthers = order.filter((k) => k !== BASE);
@@ -401,6 +568,14 @@ function renderRows(sub) {
       const overlap = r.rows.filter((row) => baseRank.has(row)).length;
       stats.push(`<span class="stat">DreamSim과 겹침 <b>${overlap}</b>/${r.rows.length}</span>`);
     }
+    const ss = subsetScore(key);
+    if (S.rk === "subset" && ss) {
+      stats.push(`<span class="stat">서브셋 R@1 <b>${pct(ss["recall@1"])}%</b></span>`);
+    }
+    const rkTip = S.rk === "query" ? "이 쿼리 AP@10 기준" : `${S.subset} 전체 쿼리 R@1 기준`;
+    const pill = rankOf
+      ? `<span class="rkpill" title="보이는 ${order.length}개 모델 중 · ${esc(rkTip)}">${rankOf.get(key)}위<small>/${order.length}</small></span>`
+      : "";
 
     const cards = r.rows.map((row, i) => {
       const g = sub.gallery[row] || { img: "", cat: "?", attrs: [] };
@@ -422,7 +597,7 @@ function renderRows(sub) {
     }).join("");
 
     return `<div class="mrow${isBase ? " is-base" : ""}">
-        <div class="mrow-head"><span class="mname">${esc(label(key))}</span>${isBase ? '<span class="tag">기준</span>' : ""}
+        <div class="mrow-head">${pill}<span class="mname">${esc(label(key))}</span>${isBase ? '<span class="tag">기준</span>' : ""}
           ${stats.join("")}</div>
         <div class="grid10">${cards}</div>
       </div>`;
@@ -430,6 +605,9 @@ function renderRows(sub) {
 
   if (!shownOthers.length) {
     blocks.push(`<div class="empty">위에서 비교할 모델을 고르면 DreamSim 아래에 나란히 표시됩니다.</div>`);
+  }
+  if (noAnswer) {
+    blocks.unshift(`<div class="note">이 쿼리는 갤러리에 ${S.crit} 기준 정답이 없어 모든 모델의 AP가 0입니다. 그래서 쿼리 성적순 순위를 매기지 않았습니다.</div>`);
   }
   $("rows").innerHTML = blocks.join("");
 }

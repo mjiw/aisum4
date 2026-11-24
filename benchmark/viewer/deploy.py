@@ -26,9 +26,12 @@ from benchmark.compute import REPO
 CONFIG = Path(__file__).resolve().parent / "deploy.json"
 
 
-def _run(cmd, cwd=None, check=True, quiet=False):
-    out = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
-                         encoding="utf-8", errors="replace")
+def _run(cmd, cwd=None, check=True, quiet=False, timeout=300):
+    try:
+        out = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
+                             encoding="utf-8", errors="replace", timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise SystemExit(f"시간 초과({timeout}초): {' '.join(cmd)} — 네트워크나 gh 로그인 상태를 확인하세요.")
     if check and out.returncode:
         raise SystemExit(f"실패: {' '.join(cmd)}\n{out.stderr.strip()}")
     if not quiet and out.stdout.strip():
@@ -36,9 +39,18 @@ def _run(cmd, cwd=None, check=True, quiet=False):
     return out
 
 
+def ensure_login():
+    """gh 토큰이 만료되면 repo view가 실패해 '저장소 없음'으로 오인하므로 먼저 확인한다."""
+    if _run(["gh", "auth", "status", "-h", "github.com"], check=False, quiet=True, timeout=60).returncode:
+        raise SystemExit("GitHub 로그인이 만료됐습니다. `gh auth login -h github.com -w` 후 다시 실행하세요.")
+
+
 def ensure_repo(repo: str, description: str):
-    if _run(["gh", "repo", "view", repo, "--json", "name"], check=False, quiet=True).returncode == 0:
+    got = _run(["gh", "repo", "view", repo, "--json", "name"], check=False, quiet=True, timeout=60)
+    if got.returncode == 0:
         return
+    if "Could not resolve to a Repository" not in got.stderr:
+        raise SystemExit(f"저장소 확인 실패: {got.stderr.strip()}")
     print(f"[repo] {repo} 이 없어 공개 저장소로 만듭니다")
     _run(["gh", "repo", "create", repo, "--public", "--description", description])
 
@@ -99,6 +111,7 @@ def main():
     if not (site / "index.html").exists() or not (site / "data" / "bundle.js").exists():
         raise SystemExit(f"{site}에 빌드 결과가 없습니다. export_static을 먼저 돌리세요.")
 
+    ensure_login()
     ensure_repo(args.repo, cfg.get("description", ""))
     push_site(site, args.repo, args.branch)
     url = ensure_pages(args.repo, args.branch)
